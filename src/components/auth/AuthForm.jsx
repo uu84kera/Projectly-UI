@@ -19,6 +19,7 @@ function AuthForm({
   footerText,
   footerAction,
   footerTarget,
+  submitTarget,
   onNavigate,
   showForgotPassword = false,
 }) {
@@ -63,7 +64,11 @@ function AuthForm({
           </button>
         )}
 
-        <button className="primary-button" type="button">
+        <button
+          className="primary-button"
+          type="button"
+          onClick={() => submitTarget && onNavigate(submitTarget)}
+        >
           {submitLabel}
         </button>
       </form>

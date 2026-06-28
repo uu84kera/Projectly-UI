@@ -12,6 +12,7 @@ function LoginPage({ onNavigate }) {
         subtitle: "Access your workspaces, boards, cards, and team activity.",
         googleLabel: "Continue with Google",
         submitLabel: "Log in",
+        submitTarget: "app",
         fields: [
           {
             label: "Email",
