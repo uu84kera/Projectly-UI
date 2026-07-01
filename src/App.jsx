@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import AppShell from "./components/app/AppShell.jsx";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage.jsx";
 import LoginPage from "./pages/auth/LoginPage.jsx";
 import RegisterPage from "./pages/auth/RegisterPage.jsx";
@@ -12,6 +13,10 @@ function App() {
 
   if (page === "forgot") {
     return <ForgotPasswordPage onNavigate={setPage} />;
+  }
+
+  if (page === "app") {
+    return <AppShell />;
   }
 
   return <LoginPage onNavigate={setPage} />;

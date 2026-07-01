@@ -37,7 +37,7 @@
   place-items: center;
   border-radius: 8px;
   color: #ffffff;
-  background: #111827;
+  background: #7c3aed;
   font-size: 14px;
 }
 
@@ -85,9 +85,10 @@
   width: 20px;
   height: 20px;
   place-items: center;
-  border: 1px solid #bfdbfe;
+  border: 1px solid #7c3aed;
   border-radius: 50%;
-  color: #2563eb;
+  color: #ffffff;
+  background: #7c3aed;
   font-size: 12px;
   font-weight: 800;
 }
@@ -144,7 +145,11 @@
   margin-top: 10px;
   border: 0;
   color: #ffffff;
-  background: #111827;
+  background: #7c3aed;
+}
+
+.primary-button:hover {
+  background: #6d28d9;
 }
 
 .link-button {
