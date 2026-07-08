@@ -40,12 +40,25 @@ function AppShell() {
     setActivePage({ name: "all-projects" });
   }
 
-  function openWorkspaceProjects(workspaceId) {
-    setActivePage({ name: "workspace-projects", workspaceId });
+  function openWorkspaceProjects(workspaceId, workspaceTab = "projects", options = {}) {
+    setActivePage({
+      name: "workspace-projects",
+      workspaceId,
+      workspaceTab,
+      openCreateProject: options.openCreateProject ?? false,
+    });
   }
 
   function openProject(projectId) {
-    setActivePage({ name: "project-backlog", projectId });
+    const projectWorkspace = workspaces.find((workspace) =>
+      workspace.projects.some((project) => project.id === projectId)
+    );
+
+    setActivePage({
+      name: "project-backlog",
+      projectId,
+      workspaceId: projectWorkspace?.id,
+    });
   }
 
   return (
@@ -96,6 +109,7 @@ function AppShell() {
         <WorkspaceProjectsPage
           archivedProjectIds={archivedProjectIds}
           initialTab={activePage.workspaceTab}
+          shouldOpenCreateProject={activePage.openCreateProject}
           onArchiveProject={archiveProject}
           onOpenProject={openProject}
           workspace={activeWorkspace}

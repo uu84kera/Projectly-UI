@@ -2,6 +2,13 @@ import React, { useEffect, useRef, useState } from "react";
 
 function WorkspaceNavGroup({ activePage, onOpenWorkspaceProjects, title, workspaces, children }) {
   const [isExpanded, setIsExpanded] = useState(true);
+  const activeWorkspaceId = activePage.workspaceId;
+
+  useEffect(() => {
+    if (workspaces.some((workspace) => workspace.id === activeWorkspaceId)) {
+      setIsExpanded(true);
+    }
+  }, [activeWorkspaceId, workspaces]);
 
   return (
     <section className="sidebar-section" aria-label={title}>
@@ -36,11 +43,7 @@ function WorkspaceNavGroup({ activePage, onOpenWorkspaceProjects, title, workspa
         <div className="workspace-list">
           {workspaces.map((workspace) => (
             <button
-              className={`workspace-item ${
-                activePage.name === "workspace-projects" && activePage.workspaceId === workspace.id
-                  ? "is-active"
-                  : ""
-              }`}
+              className={`workspace-item ${activeWorkspaceId === workspace.id ? "is-active" : ""}`}
               type="button"
               key={workspace.id}
               onClick={() => onOpenWorkspaceProjects(workspace.id)}

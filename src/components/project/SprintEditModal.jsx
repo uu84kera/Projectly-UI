@@ -46,7 +46,7 @@ function SprintEditModal({
         <div className="sprint-modal-form">
           <label className="modal-field">
             <span>
-              Sprint name <strong>*</strong>
+              Sprint name <span className="required-mark">*</span>
             </span>
             <input type="text" value={name} onChange={(event) => onNameChange(event.target.value)} />
           </label>
