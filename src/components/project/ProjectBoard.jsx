@@ -1,18 +1,117 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 
-export function WorkItemCard({ card }) {
+export const cardStatuses = [
+  { label: "Todo", value: "todo" },
+  { label: "In Progress", value: "in-progress" },
+  { label: "Done", value: "done" },
+];
+
+export function formatStatus(status) {
+  return cardStatuses.find((option) => option.value === status)?.label ?? "Todo";
+}
+
+export function WorkItemCard({
+  card,
+  draggable = false,
+  hideStatus = false,
+  onDragStart,
+  onOpenCard,
+  onStatusChange,
+  statuses = cardStatuses,
+}) {
+  const [isStatusMenuOpen, setIsStatusMenuOpen] = useState(false);
+  const statusMenuRef = useRef(null);
+  const status = card.status ?? "todo";
+
+  useEffect(() => {
+    function closeStatusMenuOnOutsideClick(event) {
+      if (!statusMenuRef.current || statusMenuRef.current.contains(event.target)) {
+        return;
+      }
+
+      setIsStatusMenuOpen(false);
+    }
+
+    document.addEventListener("mousedown", closeStatusMenuOnOutsideClick);
+
+    return () => {
+      document.removeEventListener("mousedown", closeStatusMenuOnOutsideClick);
+    };
+  }, []);
+
   return (
-    <article className="work-item-card">
+    <article
+      className="work-item-card"
+      draggable={draggable}
+      onDragStart={onDragStart}
+    >
       <label className="work-item-check">
         <input type="checkbox" defaultChecked={card.completed} />
         <span>{card.title}</span>
       </label>
-      <span className="status-pill">{card.status}</span>
+      <div className="work-item-actions">
+        {!hideStatus && (
+          <div className="card-status-menu" ref={statusMenuRef}>
+            <button
+              className="status-pill status-pill-button"
+              type="button"
+              aria-label={`Change status for ${card.title}`}
+              aria-expanded={isStatusMenuOpen}
+              onClick={() => setIsStatusMenuOpen((isOpen) => !isOpen)}
+            >
+              Status: {statuses.find((option) => option.value === status)?.label ?? formatStatus(status)}
+              <svg aria-hidden="true" fill="none" height="12" viewBox="0 0 24 24" width="12">
+                <path
+                  d="m6 9 6 6 6-6"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                />
+              </svg>
+            </button>
+            {isStatusMenuOpen && (
+              <div className="card-status-dropdown" role="menu">
+                {statuses.map((option) => (
+                  <button
+                    className={status === option.value ? "is-active" : ""}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      onStatusChange?.(card.id, option.value);
+                      setIsStatusMenuOpen(false);
+                    }}
+                    key={option.value}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        <button
+          className="card-edit-button"
+          type="button"
+          aria-label={`Open ${card.title} detail`}
+          onClick={() => onOpenCard(card)}
+        >
+          <svg aria-hidden="true" fill="none" height="15" viewBox="0 0 24 24" width="15">
+            <path
+              d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+            />
+          </svg>
+        </button>
+      </div>
     </article>
   );
 }
 
-function BoardColumn({ cards, title }) {
+function BoardColumn({ cards, onOpenCard, onStatusChange, status, statuses, title }) {
   return (
     <section className="board-column">
       <header className="board-column-header">
@@ -21,7 +120,16 @@ function BoardColumn({ cards, title }) {
       </header>
       <div className="board-column-cards">
         {cards.length > 0 ? (
-          cards.map((card) => <WorkItemCard card={card} key={card.id} />)
+          cards.map((card) => (
+            <WorkItemCard
+              card={card}
+              hideStatus
+              onOpenCard={onOpenCard}
+              onStatusChange={onStatusChange}
+              statuses={statuses}
+              key={card.id}
+            />
+          ))
         ) : (
           <p className="empty-state">No cards yet.</p>
         )}
@@ -30,14 +138,100 @@ function BoardColumn({ cards, title }) {
   );
 }
 
-function ProjectBoard({ boardColumns }) {
+function ProjectBoard({ boardColumns, onOpenCard, onStatusChange }) {
+  const [customStatuses, setCustomStatuses] = useState([]);
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [newStatusTitle, setNewStatusTitle] = useState("");
+  const statuses = [...cardStatuses, ...customStatuses];
+
+  function createStatus(event) {
+    event.preventDefault();
+
+    if (!newStatusTitle.trim()) {
+      return;
+    }
+
+    setCustomStatuses((currentStatuses) => [
+      ...currentStatuses,
+      {
+        label: newStatusTitle.trim(),
+        value: newStatusTitle.trim().toLowerCase().replace(/\s+/g, "-"),
+      },
+    ]);
+    setNewStatusTitle("");
+    setIsStatusModalOpen(false);
+  }
+
   return (
     <div className="board-view-panel">
+      <div className="board-toolbar">
+        <button className="small-action-button" type="button" onClick={() => setIsStatusModalOpen(true)}>
+          Create new status
+        </button>
+      </div>
       <div className="board-column-grid">
         {boardColumns.map((column) => (
-          <BoardColumn cards={column.cards} title={column.title} key={column.title} />
+          <BoardColumn
+            cards={column.cards}
+            onOpenCard={onOpenCard}
+            onStatusChange={onStatusChange}
+            status={column.status}
+            statuses={statuses}
+            title={column.title}
+            key={column.title}
+          />
+        ))}
+        {customStatuses.map((status) => (
+          <BoardColumn
+            cards={[]}
+            onOpenCard={onOpenCard}
+            status={status.value}
+            statuses={statuses}
+            title={status.label}
+            key={status.value}
+          />
         ))}
       </div>
+      {isStatusModalOpen && (
+        <div className="modal-backdrop" role="presentation">
+          <section className="simple-modal" aria-labelledby="create-status-title" role="dialog" aria-modal="true">
+            <header className="simple-modal-header">
+              <h2 id="create-status-title">Create new status</h2>
+              <button
+                className="modal-close-button"
+                type="button"
+                aria-label="Close create status modal"
+                onClick={() => setIsStatusModalOpen(false)}
+              >
+                <svg aria-hidden="true" fill="none" height="20" viewBox="0 0 24 24" width="20">
+                  <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+                </svg>
+              </button>
+            </header>
+            <form className="simple-modal-form" onSubmit={createStatus}>
+              <label className="modal-field">
+                <strong>
+                  Title <span className="required-mark">*</span>
+                </strong>
+                <input
+                  type="text"
+                  value={newStatusTitle}
+                  onChange={(event) => setNewStatusTitle(event.target.value)}
+                  autoFocus
+                />
+              </label>
+              <footer className="sprint-modal-footer">
+                <button className="modal-cancel-button" type="button" onClick={() => setIsStatusModalOpen(false)}>
+                  Cancel
+                </button>
+                <button className="modal-update-button" type="submit">
+                  Create
+                </button>
+              </footer>
+            </form>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

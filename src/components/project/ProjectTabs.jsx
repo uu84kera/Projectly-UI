@@ -1,6 +1,14 @@
 import React from "react";
 
-export const projectTabs = ["Backlog", "Board", "Members", "Archived Work Items", "Development", "Settings"];
+export const projectTabs = [
+  "Summary",
+  "Backlog",
+  "Board",
+  "Development",
+  "Archived Work Items",
+  "Members",
+  "Settings",
+];
 
 function ProjectTab({ isActive = false, label, onClick }) {
   return (

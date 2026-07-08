@@ -63,9 +63,9 @@ function SettingsIcon() {
   );
 }
 
-function CreateProjectTile() {
+function CreateProjectTile({ onClick }) {
   return (
-    <button className="create-board-tile" type="button">
+    <button className="create-board-tile" type="button" onClick={onClick}>
       Create new project
     </button>
   );
@@ -93,10 +93,16 @@ function WorkspaceProjects({
             >
               <ProjectsIcon />
             </WorkspaceActionButton>
-            <WorkspaceActionButton label="Members">
+            <WorkspaceActionButton
+              label="Members"
+              onClick={() => onOpenWorkspaceProjects(workspace.id, "members")}
+            >
               <MembersIcon />
             </WorkspaceActionButton>
-            <WorkspaceActionButton label="Settings">
+            <WorkspaceActionButton
+              label="Settings"
+              onClick={() => onOpenWorkspaceProjects(workspace.id, "settings")}
+            >
               <SettingsIcon />
             </WorkspaceActionButton>
           </div>
@@ -106,7 +112,13 @@ function WorkspaceProjects({
         {workspace.projects.map((project) => (
           <ProjectTile onOpenProject={onOpenProject} project={project} key={project.id} />
         ))}
-        {canCreateProject && <CreateProjectTile />}
+        {canCreateProject && (
+          <CreateProjectTile
+            onClick={() =>
+              onOpenWorkspaceProjects(workspace.id, "projects", { openCreateProject: true })
+            }
+          />
+        )}
       </div>
     </section>
   );
