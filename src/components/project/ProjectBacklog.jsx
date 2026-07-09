@@ -5,9 +5,11 @@ function EpicSprint({
   epic,
   isSprintExpanded,
   isSprintMenuOpen,
+  onArchiveSprint,
   onEditSprint,
   onCardDragStart,
   onDropCardToSprint,
+  onMoveSprint,
   onOpenCard,
   onStartSprint,
   onStatusChange,
@@ -18,7 +20,7 @@ function EpicSprint({
   sprintStatusCounts,
   sprintStartDisabled,
 }) {
-  const sprint = epic.sprints?.[0] ?? null;
+  const sprint = epic.sprints?.find((epicSprint) => !epicSprint.archived) ?? null;
   const sprintCards = sprint?.cards ?? [];
 
   return (
@@ -92,12 +94,17 @@ function EpicSprint({
                       Edit sprint
                     </button>
                     {sprintMoveActions.map((action) => (
-                      <button type="button" role="menuitem" key={action}>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => onMoveSprint(epic.id, action)}
+                        key={action}
+                      >
                         {action}
                       </button>
                     ))}
-                    <button type="button" role="menuitem">
-                      Delete sprint
+                    <button type="button" role="menuitem" onClick={() => onArchiveSprint(epic.id)}>
+                      Archive sprint
                     </button>
                   </div>
                 )}
@@ -132,10 +139,17 @@ function EpicSprint({
 }
 
 function EpicBlock({
+  epicActions,
   epic,
+  isEpicMenuOpen,
+  onArchiveEpic,
+  onEditEpic,
+  onMoveEpic,
   onOpenCard,
   onStatusChange,
   onSelectEpic,
+  onToggleEpicMenu,
+  epicMenuRef,
   selected,
 }) {
   return (
@@ -145,9 +159,52 @@ function EpicBlock({
           <h3>{epic.name}</h3>
           {epic.deadline && <span>Deadline {epic.deadline}</span>}
         </div>
-        <button className="small-action-button" type="button" onClick={() => onSelectEpic(epic.id)}>
-          View sprint
-        </button>
+        <div className="epic-header-actions">
+          <button className="small-action-button" type="button" onClick={() => onSelectEpic(epic.id)}>
+            View sprint
+          </button>
+          <div className="sprint-menu-wrapper" ref={isEpicMenuOpen ? epicMenuRef : null}>
+            <button
+              className="icon-button sprint-menu-button"
+              type="button"
+              aria-label={`Open ${epic.name} menu`}
+              aria-expanded={isEpicMenuOpen}
+              onClick={() => onToggleEpicMenu(epic.id)}
+            >
+              ...
+            </button>
+            {isEpicMenuOpen && (
+              <div className="sprint-menu epic-menu" role="menu">
+                <button type="button" role="menuitem" onClick={() => onEditEpic(epic.id)}>
+                  Edit epic
+                </button>
+                {epicActions.includes("Move epic up") && (
+                  <button type="button" role="menuitem" onClick={() => onMoveEpic(epic.id, "up")}>
+                    Move up
+                  </button>
+                )}
+                {epicActions.includes("Move epic down") && (
+                  <button type="button" role="menuitem" onClick={() => onMoveEpic(epic.id, "down")}>
+                    Move down
+                  </button>
+                )}
+                {epicActions.includes("Move epic to top") && (
+                  <button type="button" role="menuitem" onClick={() => onMoveEpic(epic.id, "top")}>
+                    Move to the top
+                  </button>
+                )}
+                {epicActions.includes("Move epic to bottom") && (
+                  <button type="button" role="menuitem" onClick={() => onMoveEpic(epic.id, "bottom")}>
+                    Move to the bottom
+                  </button>
+                )}
+                <button type="button" role="menuitem" onClick={() => onArchiveEpic(epic.id)}>
+                  Archive epic
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </header>
       <div className="epic-card-list">
         {epic.cards.map((card) => (
@@ -166,11 +223,20 @@ function EpicBlock({
 function ProjectBacklog({
   backlogCards,
   epics,
+  epicMenuRef,
   getSprintStartDisabled,
   getSprintStatusCounts,
+  getEpicMoveActions,
+  getSprintMoveActions,
+  isEpicMenuOpen,
   isSprintExpanded,
   isSprintMenuOpen,
+  onArchiveEpic,
+  onArchiveSprint,
+  onEditEpic,
   onEditSprint,
+  onMoveEpic,
+  onMoveSprint,
   onCardDragStart,
   onDropCardToBacklog,
   onDropCardToSprint,
@@ -181,11 +247,11 @@ function ProjectBacklog({
   onStartSprint,
   onStatusChange,
   onSelectEpic,
+  onToggleEpicMenu,
   onToggleSprint,
   onToggleSprintMenu,
   selectedEpicId,
   sprintMenuRef,
-  sprintMoveActions,
 }) {
   const selectedEpic = epics.find((epic) => epic.id === selectedEpicId) ?? null;
 
@@ -202,9 +268,17 @@ function ProjectBacklog({
           {epics.length > 0 ? (
             epics.map((epic) => (
               <EpicBlock
+                epicActions={getEpicMoveActions(epic)}
                 epic={epic}
+                epicMenuRef={epicMenuRef}
+                isEpicMenuOpen={isEpicMenuOpen(epic.id)}
+                onArchiveEpic={onArchiveEpic}
+                onEditEpic={onEditEpic}
+                onMoveEpic={onMoveEpic}
                 onOpenCard={onOpenCard}
                 onSelectEpic={onSelectEpic}
+                onToggleEpicMenu={onToggleEpicMenu}
+                onStatusChange={onStatusChange}
                 selected={selectedEpicId === epic.id}
                 key={epic.id}
               />
@@ -233,16 +307,18 @@ function ProjectBacklog({
               epic={selectedEpic}
               isSprintExpanded={isSprintExpanded(selectedEpic.id)}
               isSprintMenuOpen={isSprintMenuOpen(selectedEpic.id)}
+              onArchiveSprint={onArchiveSprint}
               onEditSprint={onEditSprint}
               onCardDragStart={onCardDragStart}
               onDropCardToSprint={onDropCardToSprint}
+              onMoveSprint={onMoveSprint}
               onOpenCard={onOpenCard}
               onStatusChange={onStatusChange}
               onStartSprint={onStartSprint}
               onToggleSprint={onToggleSprint}
               onToggleSprintMenu={onToggleSprintMenu}
               sprintMenuRef={sprintMenuRef}
-              sprintMoveActions={sprintMoveActions}
+              sprintMoveActions={getSprintMoveActions(selectedEpic)}
               sprintStartDisabled={getSprintStartDisabled(selectedEpic)}
               sprintStatusCounts={getSprintStatusCounts(selectedEpic)}
             />

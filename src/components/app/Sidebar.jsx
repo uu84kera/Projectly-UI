@@ -59,9 +59,36 @@ function WorkspaceNavGroup({ activePage, onOpenWorkspaceProjects, title, workspa
   );
 }
 
-function Sidebar({ activePage, onOpenAllProjects, onOpenWorkspaceProjects, user, workspaces }) {
+function Sidebar({
+  activePage,
+  guestWorkspaces = [],
+  onOpenAllProjects,
+  onOpenInbox,
+  onOpenProject,
+  onOpenUserSettings,
+  onOpenWorkspaceProjects,
+  user,
+  workspaces,
+}) {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const userMenuRef = useRef(null);
+  const searchRef = useRef(null);
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+  const workspaceResults = workspaces.filter((workspace) =>
+    workspace.name.toLowerCase().includes(normalizedSearchQuery)
+  );
+  const projectResults = [...workspaces, ...guestWorkspaces].flatMap((workspace) =>
+    (workspace.projects ?? [])
+      .filter((project) =>
+        `${project.name} ${workspace.name}`.toLowerCase().includes(normalizedSearchQuery)
+      )
+      .map((project) => ({
+        ...project,
+        workspaceName: workspace.name,
+      }))
+  );
 
   useEffect(() => {
     function closeMenuOnOutsideClick(event) {
@@ -78,6 +105,27 @@ function Sidebar({ activePage, onOpenAllProjects, onOpenWorkspaceProjects, user,
       document.removeEventListener("mousedown", closeMenuOnOutsideClick);
     };
   }, []);
+
+  useEffect(() => {
+    function closeSearchOnOutsideClick(event) {
+      if (!searchRef.current || searchRef.current.contains(event.target)) {
+        return;
+      }
+
+      setIsSearchOpen(false);
+    }
+
+    document.addEventListener("mousedown", closeSearchOnOutsideClick);
+
+    return () => {
+      document.removeEventListener("mousedown", closeSearchOnOutsideClick);
+    };
+  }, []);
+
+  function closeSearch() {
+    setIsSearchOpen(false);
+    setSearchQuery("");
+  }
 
   return (
     <aside className="app-sidebar">
@@ -97,6 +145,8 @@ function Sidebar({ activePage, onOpenAllProjects, onOpenWorkspaceProjects, user,
           className="icon-button sidebar-search-action"
           type="button"
           aria-label="Search workspaces and projects"
+          aria-expanded={isSearchOpen}
+          onClick={() => setIsSearchOpen((isOpen) => !isOpen)}
         >
           <svg
             aria-hidden="true"
@@ -116,9 +166,75 @@ function Sidebar({ activePage, onOpenAllProjects, onOpenWorkspaceProjects, user,
           </svg>
         </button>
 
+        {isSearchOpen && (
+          <div className="sidebar-search-panel" ref={searchRef}>
+            <label className="sidebar-search-field">
+              <span>Search</span>
+              <input
+                type="search"
+                placeholder="Search workspaces or projects"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                autoFocus
+              />
+            </label>
+
+            <div className="sidebar-search-results">
+              <section>
+                <h3>Workspaces</h3>
+                {workspaceResults.length > 0 ? (
+                  workspaceResults.map((workspace) => (
+                    <button
+                      type="button"
+                      key={workspace.id}
+                      onClick={() => {
+                        onOpenWorkspaceProjects(workspace.id);
+                        closeSearch();
+                      }}
+                    >
+                      <span className="search-result-type">Workspace</span>
+                      <strong>{workspace.name}</strong>
+                    </button>
+                  ))
+                ) : (
+                  <p>No matching workspaces.</p>
+                )}
+              </section>
+
+              <section>
+                <h3>Projects</h3>
+                {projectResults.length > 0 ? (
+                  projectResults.map((project) => (
+                    <button
+                      type="button"
+                      key={project.id}
+                      onClick={() => {
+                        onOpenProject(project.id);
+                        closeSearch();
+                      }}
+                    >
+                      <span className="search-result-type">{project.workspaceName}</span>
+                      <strong>{project.name}</strong>
+                    </button>
+                  ))
+                ) : (
+                  <p>No matching projects.</p>
+                )}
+              </section>
+            </div>
+          </div>
+        )}
+
         {isUserMenuOpen && (
           <div className="user-menu" role="menu">
-            <button type="button" role="menuitem">
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                onOpenUserSettings();
+                setIsUserMenuOpen(false);
+              }}
+            >
               Settings
             </button>
             <button type="button" role="menuitem">
@@ -129,7 +245,11 @@ function Sidebar({ activePage, onOpenAllProjects, onOpenWorkspaceProjects, user,
       </div>
 
       <nav className="sidebar-primary-nav" aria-label="Main navigation">
-        <button className="sidebar-primary-item" type="button">
+        <button
+          className={`sidebar-primary-item ${activePage.name === "inbox" ? "is-active" : ""}`}
+          type="button"
+          onClick={onOpenInbox}
+        >
           Inbox
         </button>
 

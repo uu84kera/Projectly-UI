@@ -1,6 +1,8 @@
 export const user = {
   name: "John",
-  initials: "J",
+  initials: "JO",
+  email: "john@example.com",
+  theme: "System preference",
 };
 
 export const workspaces = [
@@ -60,5 +62,35 @@ export const guestWorkspaces = [
     id: "guest-workspace1",
     name: "Guest workspace1",
     projects: [{ id: "guest-project-1", name: "Invited Project" }],
+  },
+];
+
+export const inboxItems = [
+  {
+    id: "mention-1",
+    type: "mention",
+    actor: "Amy",
+    projectName: "Project1",
+    cardTitle: "card1-1",
+    message: "@john can you review this card before the sprint starts?",
+    time: "Today",
+  },
+  {
+    id: "mention-2",
+    type: "mention",
+    actor: "Kera",
+    projectName: "Project2",
+    cardTitle: "Guest access setup",
+    message: "@john I added the first checklist item in comments and activity.",
+    time: "Yesterday",
+  },
+  {
+    id: "invite-1",
+    type: "project-invite",
+    actor: "Kera",
+    workspaceName: "Guest workspace1",
+    projectName: "Invited Project",
+    message: "Kera invited you to join Invited Project.",
+    time: "Jun 2026",
   },
 ];

@@ -1,7 +1,9 @@
 import React, { useState } from "react";
-import { guestWorkspaces, user, workspaces } from "../../data/mockWorkspaceData.js";
+import { guestWorkspaces, inboxItems, user, workspaces } from "../../data/mockWorkspaceData.js";
 import AllProjectsPage from "../../pages/app/AllProjectsPage.jsx";
+import InboxPage from "../../pages/app/InboxPage.jsx";
 import ProjectBacklogPage from "../../pages/app/ProjectBacklogPage.jsx";
+import UserSettingsPage from "../../pages/app/UserSettingsPage.jsx";
 import WorkspaceProjectsPage from "../../pages/app/WorkspaceProjectsPage.jsx";
 import Sidebar from "./Sidebar.jsx";
 
@@ -40,6 +42,14 @@ function AppShell() {
     setActivePage({ name: "all-projects" });
   }
 
+  function openInbox() {
+    setActivePage({ name: "inbox" });
+  }
+
+  function openUserSettings() {
+    setActivePage({ name: "user-settings" });
+  }
+
   function openWorkspaceProjects(workspaceId, workspaceTab = "projects", options = {}) {
     setActivePage({
       name: "workspace-projects",
@@ -67,8 +77,12 @@ function AppShell() {
         <Sidebar
           activePage={activePage}
           onOpenAllProjects={openAllProjects}
+          onOpenInbox={openInbox}
+          onOpenProject={openProject}
+          onOpenUserSettings={openUserSettings}
           onOpenWorkspaceProjects={openWorkspaceProjects}
           user={user}
+          guestWorkspaces={guestWorkspaces}
           workspaces={workspaces}
         />
       )}
@@ -99,7 +113,11 @@ function AppShell() {
           <path d="M9 5v14" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
         </svg>
       </button>
-      {activePage.name === "project-backlog" ? (
+      {activePage.name === "inbox" ? (
+        <InboxPage inboxItems={inboxItems} />
+      ) : activePage.name === "user-settings" ? (
+        <UserSettingsPage user={user} />
+      ) : activePage.name === "project-backlog" ? (
         <ProjectBacklogPage
           onArchiveProject={archiveProject}
           project={activeProject}
