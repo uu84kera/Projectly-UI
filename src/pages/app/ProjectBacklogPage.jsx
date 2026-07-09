@@ -4,6 +4,7 @@ import CreateCardModal from "../../components/project/CreateCardModal.jsx";
 import CreateEpicModal from "../../components/project/CreateEpicModal.jsx";
 import CreateSprintModal from "../../components/project/CreateSprintModal.jsx";
 import ProjectBacklog from "../../components/project/ProjectBacklog.jsx";
+import ProjectArchivedWorkItems from "../../components/project/ProjectArchivedWorkItems.jsx";
 import ProjectBoard from "../../components/project/ProjectBoard.jsx";
 import ProjectMembers from "../../components/project/ProjectMembers.jsx";
 import ProjectSettings from "../../components/project/ProjectSettings.jsx";
@@ -26,9 +27,11 @@ function ProjectBacklogPage({ onArchiveProject, project, workspace }) {
   const [expandedEpicId, setExpandedEpicId] = useState(null);
   const [localEpics, setLocalEpics] = useState(project.epics ?? []);
   const [isCreatingEpic, setIsCreatingEpic] = useState(false);
+  const [editingEpicId, setEditingEpicId] = useState(null);
   const [isCreatingSprint, setIsCreatingSprint] = useState(false);
   const [isEditingSprint, setIsEditingSprint] = useState(false);
   const [sprintMenuEpicId, setSprintMenuEpicId] = useState(null);
+  const [epicMenuId, setEpicMenuId] = useState(null);
   const [activeSprintEpicId, setActiveSprintEpicId] = useState(null);
   const [sprintName, setSprintName] = useState("");
   const [sprintDuration, setSprintDuration] = useState("custom");
@@ -43,18 +46,55 @@ function ProjectBacklogPage({ onArchiveProject, project, workspace }) {
   const [isCreatingCard, setIsCreatingCard] = useState(false);
   const [selectedCard, setSelectedCard] = useState(null);
   const sprintMenuRef = useRef(null);
-  const epics = localEpics;
+  const epicMenuRef = useRef(null);
+  const epics = localEpics.filter((epic) => !epic.archived);
+  const archivedEpics = localEpics.filter((epic) => epic.archived);
+  const archivedSprints = localEpics.flatMap((epic) =>
+    (epic.sprints ?? [])
+      .filter((epicSprint) => epicSprint.archived)
+      .map((epicSprint) => ({
+        ...epicSprint,
+        epicName: epic.name,
+      }))
+  );
+  const archivedCards = [
+    ...createdCards.filter((card) => card.archived).map((card) => ({
+      ...card,
+      source: "Backlog",
+    })),
+    ...localEpics.flatMap((epic) => [
+      ...epic.cards.filter((card) => card.archived).map((card) => ({
+        ...card,
+        source: epic.name,
+      })),
+      ...(epic.sprints ?? []).flatMap((epicSprint) =>
+        epicSprint.cards.filter((card) => card.archived).map((card) => ({
+          ...card,
+          source: `${epic.name} · ${epicSprint.title}`,
+        }))
+      ),
+    ]),
+  ];
   const activeEpic = epics.find((epic) => epic.id === activeSprintEpicId) ?? null;
-  const sprint = activeEpic?.sprints?.[0] ?? null;
+  const sprint = activeEpic?.sprints?.find((epicSprint) => !epicSprint.archived) ?? null;
+  const editingEpic = localEpics.find((epic) => epic.id === editingEpicId) ?? null;
   const projectCards = [
-    ...epics.flatMap((epic) => epic.cards),
-    ...createdCards,
+    ...epics.flatMap((epic) => epic.cards.filter((card) => !card.archived)),
+    ...createdCards.filter((card) => !card.archived),
   ];
   const backlogCards = projectCards.filter((card) => !card.sprintId);
-  const allSprintCards = epics.flatMap((epic) => epic.sprints?.flatMap((epicSprint) => epicSprint.cards) ?? []);
-  const sprintCards = sprint?.cards ?? [];
+  const allSprintCards = epics.flatMap((epic) =>
+    epic.sprints
+      ?.filter((epicSprint) => !epicSprint.archived)
+      .flatMap((epicSprint) => epicSprint.cards.filter((card) => !card.archived)) ?? []
+  );
+  const sprintCards = sprint?.cards.filter((card) => !card.archived) ?? [];
   const startedSprintCards = epics.flatMap((epic) =>
-    epic.sprints?.flatMap((epicSprint) => (epicSprint.isStarted ? epicSprint.cards : [])) ?? []
+    epic.sprints?.flatMap((epicSprint) =>
+      !epicSprint.archived && epicSprint.isStarted
+        ? epicSprint.cards.filter((card) => !card.archived)
+        : []
+    ) ?? []
   );
   const cardStatusCounts = {
     todo: projectCards.filter((card) => card.status === "todo").length,
@@ -77,12 +117,6 @@ function ProjectBacklogPage({ onArchiveProject, project, workspace }) {
       cards: startedSprintCards.filter((card) => card.status === "done" || card.completed),
     },
   ];
-  const sprintIndex = 0;
-  const sprintCount = activeEpic?.sprints?.length ?? 0;
-  const sprintMoveActions = [
-    ...(sprintIndex > 0 ? ["Move sprint up", "Move sprint to top"] : []),
-    ...(sprintIndex < sprintCount - 1 ? ["Move sprint down", "Move sprint to bottom"] : []),
-  ];
   const projectMembers = [
     ...(workspace.members ?? []),
     ...(workspace.singleBoardGuests ?? []).filter((guest) => guest.projects.includes(project.name)),
@@ -103,12 +137,156 @@ function ProjectBacklogPage({ onArchiveProject, project, workspace }) {
   const sprintStartDisabled =
     !sprint || sprint.isStarted || sprintCards.length === 0 || !sprint.startDate || !sprint.endDate;
   const sprintOptions = epics.flatMap((epic) =>
-    (epic.sprints ?? []).map((epicSprint) => ({
-      id: epicSprint.id,
-      title: epicSprint.title,
-      epicName: epic.name,
-    }))
+    (epic.sprints ?? [])
+      .filter((epicSprint) => !epicSprint.archived)
+      .map((epicSprint) => ({
+        id: epicSprint.id,
+        title: epicSprint.title,
+        epicName: epic.name,
+      }))
   );
+
+  function getEpicMoveActions(epic) {
+    const epicIndex = epics.findIndex((currentEpic) => currentEpic.id === epic.id);
+
+    return [
+      ...(epicIndex > 0 ? ["Move epic up", "Move epic to top"] : []),
+      ...(epicIndex < epics.length - 1 ? ["Move epic down", "Move epic to bottom"] : []),
+    ];
+  }
+
+  function getSprintMoveActions(epic) {
+    const activeSprints = (epic.sprints ?? []).filter((epicSprint) => !epicSprint.archived);
+    const sprintIndex = 0;
+
+    return [
+      ...(sprintIndex > 0 ? ["Move sprint up", "Move sprint to top"] : []),
+      ...(sprintIndex < activeSprints.length - 1 ? ["Move sprint down", "Move sprint to bottom"] : []),
+    ];
+  }
+
+  function reorderVisibleEpics(epicId, action) {
+    setLocalEpics((currentEpics) => {
+      const visibleEpics = currentEpics.filter((epic) => !epic.archived);
+      const archivedEpics = currentEpics.filter((epic) => epic.archived);
+      const fromIndex = visibleEpics.findIndex((epic) => epic.id === epicId);
+
+      if (fromIndex === -1) {
+        return currentEpics;
+      }
+
+      const nextVisibleEpics = [...visibleEpics];
+      const [movedEpic] = nextVisibleEpics.splice(fromIndex, 1);
+      let toIndex = fromIndex;
+
+      if (action === "up") {
+        toIndex = Math.max(0, fromIndex - 1);
+      } else if (action === "down") {
+        toIndex = Math.min(nextVisibleEpics.length, fromIndex + 1);
+      } else if (action === "top") {
+        toIndex = 0;
+      } else if (action === "bottom") {
+        toIndex = nextVisibleEpics.length;
+      }
+
+      nextVisibleEpics.splice(toIndex, 0, movedEpic);
+
+      return [...nextVisibleEpics, ...archivedEpics];
+    });
+    setEpicMenuId(null);
+  }
+
+  function archiveEpic(epicId) {
+    setLocalEpics((currentEpics) =>
+      currentEpics.map((epic) => (epic.id === epicId ? { ...epic, archived: true } : epic))
+    );
+    setEpicMenuId(null);
+    setExpandedEpicId((currentEpicId) => (currentEpicId === epicId ? null : currentEpicId));
+    setActiveSprintEpicId((currentEpicId) => (currentEpicId === epicId ? null : currentEpicId));
+  }
+
+  function editEpic(epicId) {
+    setEditingEpicId(epicId);
+    setEpicMenuId(null);
+  }
+
+  function archiveSprint(epicId) {
+    setLocalEpics((currentEpics) =>
+      currentEpics.map((epic) => {
+        if (epic.id !== epicId) {
+          return epic;
+        }
+
+        const activeSprint = epic.sprints?.find((epicSprint) => !epicSprint.archived);
+
+        return {
+          ...epic,
+          sprints: (epic.sprints ?? []).map((epicSprint) =>
+            epicSprint.id === activeSprint?.id ? { ...epicSprint, archived: true } : epicSprint
+          ),
+        };
+      })
+    );
+    setSprintMenuEpicId(null);
+    setExpandedEpicId((currentEpicId) => (currentEpicId === epicId ? null : currentEpicId));
+  }
+
+  function archiveCard(cardId) {
+    setCreatedCards((cards) =>
+      cards.map((card) => (card.id === cardId ? { ...card, archived: true } : card))
+    );
+    setLocalEpics((currentEpics) =>
+      currentEpics.map((epic) => ({
+        ...epic,
+        cards: epic.cards.map((card) => (card.id === cardId ? { ...card, archived: true } : card)),
+        sprints: (epic.sprints ?? []).map((epicSprint) => ({
+          ...epicSprint,
+          cards: epicSprint.cards.map((card) => (card.id === cardId ? { ...card, archived: true } : card)),
+        })),
+      }))
+    );
+    setSelectedCard(null);
+  }
+
+  function moveSprint(epicId, action) {
+    setLocalEpics((currentEpics) =>
+      currentEpics.map((epic) => {
+        if (epic.id !== epicId) {
+          return epic;
+        }
+
+        const activeSprints = (epic.sprints ?? []).filter((epicSprint) => !epicSprint.archived);
+        const archivedSprints = (epic.sprints ?? []).filter((epicSprint) => epicSprint.archived);
+        const fromIndex = 0;
+
+        if (activeSprints.length <= 1) {
+          return epic;
+        }
+
+        const nextSprints = [...activeSprints];
+        const [movedSprint] = nextSprints.splice(fromIndex, 1);
+        let toIndex = fromIndex;
+
+        if (action === "Move sprint up") {
+          toIndex = Math.max(0, fromIndex - 1);
+        } else if (action === "Move sprint down") {
+          toIndex = Math.min(nextSprints.length, fromIndex + 1);
+        } else if (action === "Move sprint to top") {
+          toIndex = 0;
+        } else if (action === "Move sprint to bottom") {
+          toIndex = nextSprints.length;
+        }
+
+        nextSprints.splice(toIndex, 0, movedSprint);
+
+        return {
+          ...epic,
+          sprints: [...nextSprints, ...archivedSprints],
+        };
+      })
+    );
+    setSprintMenuEpicId(null);
+  }
 
   function findCardById(cardId) {
     const backlogCard = createdCards.find((card) => card.id === cardId);
@@ -214,7 +392,7 @@ function ProjectBacklogPage({ onArchiveProject, project, workspace }) {
           return epic;
         }
 
-        const targetSprint = epic.sprints?.[0];
+        const targetSprint = epic.sprints?.find((epicSprint) => !epicSprint.archived);
 
         if (!targetSprint) {
           return epic;
@@ -222,8 +400,8 @@ function ProjectBacklogPage({ onArchiveProject, project, workspace }) {
 
         return {
           ...epic,
-          sprints: epic.sprints.map((epicSprint, index) =>
-            index === 0
+          sprints: epic.sprints.map((epicSprint) =>
+            epicSprint.id === targetSprint.id
               ? {
                   ...epicSprint,
                   cards: [
@@ -259,6 +437,22 @@ function ProjectBacklogPage({ onArchiveProject, project, workspace }) {
     };
   }, []);
 
+  useEffect(() => {
+    function closeEpicMenuOnOutsideClick(event) {
+      if (!epicMenuRef.current || epicMenuRef.current.contains(event.target)) {
+        return;
+      }
+
+      setEpicMenuId(null);
+    }
+
+    document.addEventListener("mousedown", closeEpicMenuOnOutsideClick);
+
+    return () => {
+      document.removeEventListener("mousedown", closeEpicMenuOnOutsideClick);
+    };
+  }, []);
+
   return (
     <section className="app-content" aria-labelledby="project-title">
       <header className="page-header">
@@ -285,15 +479,28 @@ function ProjectBacklogPage({ onArchiveProject, project, workspace }) {
           onOpenCard={setSelectedCard}
           onStatusChange={updateCardStatus}
         />
+      ) : activeTab === "Archived Work Items" ? (
+        <ProjectArchivedWorkItems
+          archivedCards={archivedCards}
+          archivedEpics={archivedEpics}
+          archivedSprints={archivedSprints}
+        />
       ) : activeTab === "Backlog" ? (
         <ProjectBacklog
           backlogCards={backlogCards}
           epics={epics}
+          epicMenuRef={epicMenuRef}
+          getEpicMoveActions={getEpicMoveActions}
           isSprintExpanded={(epicId) => expandedEpicId === epicId}
+          isEpicMenuOpen={(epicId) => epicMenuId === epicId}
           isSprintMenuOpen={(epicId) => sprintMenuEpicId === epicId}
+          onArchiveEpic={archiveEpic}
+          getSprintMoveActions={getSprintMoveActions}
+          onArchiveSprint={archiveSprint}
+          onEditEpic={editEpic}
           onEditSprint={(epicId) => {
             const selectedEpic = epics.find((epic) => epic.id === epicId);
-            const selectedSprint = selectedEpic?.sprints?.[0];
+            const selectedSprint = selectedEpic?.sprints?.find((epicSprint) => !epicSprint.archived);
 
             if (!selectedSprint) {
               return;
@@ -309,6 +516,8 @@ function ProjectBacklogPage({ onArchiveProject, project, workspace }) {
           onCardDragStart={handleCardDragStart}
           onDropCardToBacklog={moveCardToBacklog}
           onDropCardToSprint={moveCardToSprint}
+          onMoveEpic={reorderVisibleEpics}
+          onMoveSprint={moveSprint}
           onOpenCard={setSelectedCard}
           onOpenCreateEpic={() => setIsCreatingEpic(true)}
           onOpenCreateCard={() => setIsCreatingCard(true)}
@@ -322,7 +531,7 @@ function ProjectBacklogPage({ onArchiveProject, project, workspace }) {
           }}
           onStartSprint={(epicId) => {
             const selectedEpic = epics.find((epic) => epic.id === epicId);
-            const selectedSprint = selectedEpic?.sprints?.[0];
+            const selectedSprint = selectedEpic?.sprints?.find((epicSprint) => !epicSprint.archived);
             const selectedSprintCards = selectedSprint?.cards ?? [];
             const selectedSprintStartDisabled =
               !selectedSprint ||
@@ -340,8 +549,8 @@ function ProjectBacklogPage({ onArchiveProject, project, workspace }) {
                 epic.id === epicId
                   ? {
                       ...epic,
-                      sprints: epic.sprints.map((epicSprint, index) =>
-                        index === 0 ? { ...epicSprint, isStarted: true } : epicSprint
+                      sprints: epic.sprints.map((epicSprint) =>
+                        epicSprint.id === selectedSprint.id ? { ...epicSprint, isStarted: true } : epicSprint
                       ),
                     }
                   : epic
@@ -350,6 +559,9 @@ function ProjectBacklogPage({ onArchiveProject, project, workspace }) {
             setActiveTab("Board");
           }}
           onStatusChange={updateCardStatus}
+          onToggleEpicMenu={(epicId) => {
+            setEpicMenuId((currentEpicId) => (currentEpicId === epicId ? null : epicId));
+          }}
           onToggleSprint={(epicId) => {
             setExpandedEpicId((currentEpicId) => (currentEpicId === epicId ? null : epicId));
           }}
@@ -358,9 +570,8 @@ function ProjectBacklogPage({ onArchiveProject, project, workspace }) {
           }}
           selectedEpicId={activeSprintEpicId}
           sprintMenuRef={sprintMenuRef}
-          sprintMoveActions={sprintMoveActions}
           getSprintStartDisabled={(epic) => {
-            const epicSprint = epic.sprints?.[0];
+            const epicSprint = epic.sprints?.find((currentSprint) => !currentSprint.archived);
             const epicSprintCards = epicSprint?.cards ?? [];
             return (
               !epicSprint ||
@@ -371,7 +582,9 @@ function ProjectBacklogPage({ onArchiveProject, project, workspace }) {
             );
           }}
           getSprintStatusCounts={(epic) => {
-            const epicSprintCards = epic.sprints?.[0]?.cards ?? [];
+            const epicSprintCards =
+              epic.sprints?.find((currentSprint) => !currentSprint.archived)?.cards.filter((card) => !card.archived) ??
+              [];
             return {
               todo: epicSprintCards.filter((card) => card.status === "todo").length,
               inProgress: epicSprintCards.filter((card) => card.status === "in-progress").length,
@@ -410,8 +623,8 @@ function ProjectBacklogPage({ onArchiveProject, project, workspace }) {
                 epic.id === activeSprintEpicId
                   ? {
                       ...epic,
-                      sprints: (epic.sprints ?? []).map((epicSprint, index) =>
-                        index === 0
+                      sprints: (epic.sprints ?? []).map((epicSprint) =>
+                        epicSprint.id === sprint?.id
                           ? {
                               ...epicSprint,
                               title: sprintName,
@@ -450,6 +663,29 @@ function ProjectBacklogPage({ onArchiveProject, project, workspace }) {
         />
       )}
 
+      {editingEpic && (
+        <CreateEpicModal
+          initialDeadline={editingEpic.deadline ?? ""}
+          initialTitle={editingEpic.name}
+          mode="edit"
+          onClose={() => setEditingEpicId(null)}
+          onCreate={({ title, deadline }) => {
+            setLocalEpics((currentEpics) =>
+              currentEpics.map((epic) =>
+                epic.id === editingEpic.id
+                  ? {
+                      ...epic,
+                      name: title,
+                      deadline,
+                    }
+                  : epic
+              )
+            );
+            setEditingEpicId(null);
+          }}
+        />
+      )}
+
       {isCreatingSprint && (
         <CreateSprintModal
           onClose={() => setIsCreatingSprint(false)}
@@ -466,6 +702,7 @@ function ProjectBacklogPage({ onArchiveProject, project, workspace }) {
                           title,
                           startDate,
                           endDate,
+                          archived: false,
                           isStarted: false,
                           cards: [],
                         },
@@ -502,6 +739,7 @@ function ProjectBacklogPage({ onArchiveProject, project, workspace }) {
       {selectedCard && (
         <CardDetailModal
           card={selectedCard}
+          onArchiveCard={archiveCard}
           onClose={() => setSelectedCard(null)}
           onStatusChange={updateCardStatus}
           projectMembers={projectMembers}

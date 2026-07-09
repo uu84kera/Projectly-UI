@@ -14,7 +14,7 @@ const labelColors = [
   { name: "Gray", value: "gray" },
 ];
 
-function CardDetailModal({ card, onClose, onStatusChange, projectMembers = [], sprintOptions = [] }) {
+function CardDetailModal({ card, onArchiveCard, onClose, onStatusChange, projectMembers = [], sprintOptions = [] }) {
   const [activeTab, setActiveTab] = useState("Members");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [statuses, setStatuses] = useState(defaultCardStatuses);
@@ -206,7 +206,14 @@ function CardDetailModal({ card, onClose, onStatusChange, projectMembers = [], s
               </button>
               {isMenuOpen && (
                 <div className="sprint-menu card-actions-menu" role="menu">
-                  <button type="button" role="menuitem">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      onArchiveCard?.(card.id);
+                      setIsMenuOpen(false);
+                    }}
+                  >
                     Archive card
                   </button>
                 </div>

@@ -1,8 +1,16 @@
 import React, { useState } from "react";
 
-function CreateEpicModal({ onClose, onCreate }) {
-  const [title, setTitle] = useState("");
-  const [deadline, setDeadline] = useState("");
+function CreateEpicModal({
+  initialDeadline = "",
+  initialTitle = "",
+  mode = "create",
+  onClose,
+  onCreate,
+}) {
+  const [title, setTitle] = useState(initialTitle);
+  const [deadline, setDeadline] = useState(initialDeadline);
+  const modalTitle = mode === "edit" ? "Edit epic" : "Create new epic";
+  const submitLabel = mode === "edit" ? "Save" : "Create";
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -21,7 +29,7 @@ function CreateEpicModal({ onClose, onCreate }) {
     <div className="modal-backdrop" role="presentation">
       <section className="simple-modal" aria-labelledby="create-epic-title" role="dialog" aria-modal="true">
         <header className="simple-modal-header">
-          <h2 id="create-epic-title">Create new epic</h2>
+          <h2 id="create-epic-title">{modalTitle}</h2>
           <button className="modal-close-button" type="button" aria-label="Close create epic" onClick={onClose}>
             <svg aria-hidden="true" fill="none" height="20" viewBox="0 0 24 24" width="20">
               <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
@@ -47,7 +55,7 @@ function CreateEpicModal({ onClose, onCreate }) {
               Cancel
             </button>
             <button className="modal-update-button" type="submit">
-              Create
+              {submitLabel}
             </button>
           </footer>
         </form>
