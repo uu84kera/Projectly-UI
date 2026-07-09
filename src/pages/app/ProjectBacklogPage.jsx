@@ -88,6 +88,9 @@ function ProjectBacklogPage({ onArchiveProject, project, workspace }) {
       ?.filter((epicSprint) => !epicSprint.archived)
       .flatMap((epicSprint) => epicSprint.cards.filter((card) => !card.archived)) ?? []
   );
+  const linkedWorkItemOptions = [...projectCards, ...allSprintCards].filter(
+    (card, index, cards) => cards.findIndex((currentCard) => currentCard.id === card.id) === index
+  );
   const sprintCards = sprint?.cards.filter((card) => !card.archived) ?? [];
   const startedSprintCards = epics.flatMap((epic) =>
     epic.sprints?.flatMap((epicSprint) =>
@@ -246,6 +249,41 @@ function ProjectBacklogPage({ onArchiveProject, project, workspace }) {
       }))
     );
     setSelectedCard(null);
+  }
+
+  function restoreEpic(epicId) {
+    setLocalEpics((currentEpics) =>
+      currentEpics.map((epic) => (epic.id === epicId ? { ...epic, archived: false } : epic))
+    );
+  }
+
+  function restoreSprint(sprintId) {
+    setLocalEpics((currentEpics) =>
+      currentEpics.map((epic) => ({
+        ...epic,
+        sprints: (epic.sprints ?? []).map((epicSprint) =>
+          epicSprint.id === sprintId ? { ...epicSprint, archived: false } : epicSprint
+        ),
+      }))
+    );
+  }
+
+  function restoreCard(cardId) {
+    setCreatedCards((cards) =>
+      cards.map((card) => (card.id === cardId ? { ...card, archived: false } : card))
+    );
+    setLocalEpics((currentEpics) =>
+      currentEpics.map((epic) => ({
+        ...epic,
+        cards: epic.cards.map((card) => (card.id === cardId ? { ...card, archived: false } : card)),
+        sprints: (epic.sprints ?? []).map((epicSprint) => ({
+          ...epicSprint,
+          cards: epicSprint.cards.map((card) =>
+            card.id === cardId ? { ...card, archived: false } : card
+          ),
+        })),
+      }))
+    );
   }
 
   function moveSprint(epicId, action) {
@@ -484,6 +522,9 @@ function ProjectBacklogPage({ onArchiveProject, project, workspace }) {
           archivedCards={archivedCards}
           archivedEpics={archivedEpics}
           archivedSprints={archivedSprints}
+          onRestoreCard={restoreCard}
+          onRestoreEpic={restoreEpic}
+          onRestoreSprint={restoreSprint}
         />
       ) : activeTab === "Backlog" ? (
         <ProjectBacklog
@@ -739,6 +780,7 @@ function ProjectBacklogPage({ onArchiveProject, project, workspace }) {
       {selectedCard && (
         <CardDetailModal
           card={selectedCard}
+          linkedWorkItemOptions={linkedWorkItemOptions}
           onArchiveCard={archiveCard}
           onClose={() => setSelectedCard(null)}
           onStatusChange={updateCardStatus}

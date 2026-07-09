@@ -38,6 +38,10 @@ function AppShell() {
     }
   }
 
+  function restoreProject(projectId) {
+    setArchivedProjectIds((projectIds) => projectIds.filter((archivedProjectId) => archivedProjectId !== projectId));
+  }
+
   function openAllProjects() {
     setActivePage({ name: "all-projects" });
   }
@@ -130,6 +134,7 @@ function AppShell() {
           shouldOpenCreateProject={activePage.openCreateProject}
           onArchiveProject={archiveProject}
           onOpenProject={openProject}
+          onRestoreProject={restoreProject}
           workspace={activeWorkspace}
         />
       ) : (
