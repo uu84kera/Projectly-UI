@@ -975,6 +975,7 @@
 :root[data-theme="dark"] .status-group-header h2,
 :root[data-theme="dark"] .board-column-header h3,
 :root[data-theme="dark"] .card-title-row h2,
+:root[data-theme="dark"] .linked-work-items-section h3,
 :root[data-theme="dark"] .card-description-section h3,
 :root[data-theme="dark"] .card-detail-side summary {
   color: #f8fafc;
@@ -989,6 +990,16 @@
 :root[data-theme="dark"] .card-status-field,
 :root[data-theme="dark"] .card-description-section p {
   color: #94a3b8;
+}
+
+:root[data-theme="dark"] .linked-work-item-form label,
+:root[data-theme="dark"] .linked-work-item span,
+:root[data-theme="dark"] .linked-work-item-empty {
+  color: #94a3b8;
+}
+
+:root[data-theme="dark"] .linked-work-item strong {
+  color: #f8fafc;
 }
 
 :root[data-theme="dark"] .settings-panel,
@@ -1053,6 +1064,7 @@
 :root[data-theme="dark"] .settings-field input,
 :root[data-theme="dark"] .sidebar-search-field input,
 :root[data-theme="dark"] .card-status-select,
+:root[data-theme="dark"] .linked-work-item-form select,
 :root[data-theme="dark"] .card-member-editor input,
 :root[data-theme="dark"] .label-create-row input,
 :root[data-theme="dark"] .label-create-row select,
@@ -1076,6 +1088,12 @@
 :root[data-theme="dark"] .drop-zone:hover {
   border-color: #8b5cf6;
   background: #241a3f;
+}
+
+:root[data-theme="dark"] .linked-work-item,
+:root[data-theme="dark"] .linked-work-item-empty {
+  border-color: #263244;
+  background: #172033;
 }
 
 .workspace-board-header {
@@ -1222,6 +1240,10 @@
 }
 
 .archived-project-tile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   color: #626f86;
 }
 
@@ -1251,10 +1273,30 @@
 }
 
 .archived-work-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   border: 1px solid #dfe1e6;
   border-radius: 7px;
   background: #f7f8fa;
   padding: 10px;
+}
+
+.restore-action-button {
+  min-height: 32px;
+  border: 0;
+  border-radius: 7px;
+  padding: 0 12px;
+  color: #ffffff;
+  background: #7c3aed;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.restore-action-button:hover {
+  background: #6d28d9;
 }
 
 .archived-work-type {
@@ -2341,6 +2383,92 @@ select.card-status-select {
 .card-label.is-gray {
   color: #344054;
   background: #f2f4f7;
+}
+
+.linked-work-items-section {
+  display: grid;
+  gap: 10px;
+}
+
+.linked-work-items-section header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.linked-work-items-section h3 {
+  margin: 0;
+  color: #172b4d;
+  font-size: 15px;
+}
+
+.linked-work-item-form {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.8fr) minmax(180px, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.linked-work-item-form label {
+  display: grid;
+  gap: 6px;
+  color: #44546f;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.linked-work-item-form select {
+  min-height: 36px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 0 10px;
+  color: #172b4d;
+  font: inherit;
+  font-size: 13px;
+}
+
+.linked-work-item-list {
+  display: grid;
+  gap: 8px;
+}
+
+.linked-work-item,
+.linked-work-item-empty {
+  border: 1px solid #dfe1e6;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px;
+}
+
+.linked-work-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.linked-work-item div {
+  display: grid;
+  gap: 3px;
+}
+
+.linked-work-item span {
+  color: #626f86;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.linked-work-item strong {
+  color: #172b4d;
+  font-size: 13px;
+}
+
+.linked-work-item-empty {
+  margin: 0;
+  color: #626f86;
+  font-size: 13px;
 }
 
 .card-description-section {

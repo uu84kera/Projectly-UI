@@ -6,6 +6,15 @@ const defaultCardStatuses = [
   { label: "Done", value: "done" },
 ];
 const cardTabs = ["Members", "Labels", "Attachments"];
+const workItemRelations = [
+  "is blocked by",
+  "blocks",
+  "is cloned by",
+  "clones",
+  "is duplicated by",
+  "duplicates",
+  "relates to",
+];
 const labelColors = [
   { name: "Purple", value: "purple" },
   { name: "Green", value: "green" },
@@ -14,11 +23,22 @@ const labelColors = [
   { name: "Gray", value: "gray" },
 ];
 
-function CardDetailModal({ card, onArchiveCard, onClose, onStatusChange, projectMembers = [], sprintOptions = [] }) {
+function CardDetailModal({
+  card,
+  linkedWorkItemOptions = [],
+  onArchiveCard,
+  onClose,
+  onStatusChange,
+  projectMembers = [],
+  sprintOptions = [],
+}) {
   const [activeTab, setActiveTab] = useState("Members");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [statuses, setStatuses] = useState(defaultCardStatuses);
   const [sprintId, setSprintId] = useState(card.sprintId ?? "backlog");
+  const [linkedRelation, setLinkedRelation] = useState(workItemRelations[0]);
+  const [linkedCardId, setLinkedCardId] = useState("");
+  const [linkedWorkItems, setLinkedWorkItems] = useState([]);
   const [isStatusMenuOpen, setIsStatusMenuOpen] = useState(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [newStatusTitle, setNewStatusTitle] = useState("");
@@ -40,6 +60,34 @@ function CardDetailModal({ card, onArchiveCard, onClose, onStatusChange, project
     const searchValue = `${member.name} ${member.username}`.toLowerCase();
     return searchValue.includes(memberSearch.toLowerCase());
   });
+  const availableLinkedWorkItems = linkedWorkItemOptions.filter((workItem) => workItem.id !== card.id);
+  const selectedLinkedCard = availableLinkedWorkItems.find((workItem) => workItem.id === linkedCardId);
+  const hasDuplicateLinkedWorkItem =
+    selectedLinkedCard &&
+    linkedWorkItems.some(
+      (linkedItem) =>
+        linkedItem.cardId === selectedLinkedCard.id && linkedItem.relation === linkedRelation
+    );
+
+  function addLinkedWorkItem(event) {
+    event.preventDefault();
+
+    if (!selectedLinkedCard || hasDuplicateLinkedWorkItem) {
+      return;
+    }
+
+    setLinkedWorkItems((currentItems) => [
+      ...currentItems,
+      {
+        id: `linked-${Date.now()}`,
+        cardId: selectedLinkedCard.id,
+        relation: linkedRelation,
+        title: selectedLinkedCard.title,
+      },
+    ]);
+    setLinkedCardId("");
+    setLinkedRelation(workItemRelations[0]);
+  }
 
   function addMember(member) {
     setSelectedMembers((members) =>
@@ -341,6 +389,77 @@ function CardDetailModal({ card, onArchiveCard, onClose, onStatusChange, project
                 </button>
               )}
             </div>
+
+            <section className="linked-work-items-section">
+              <header>
+                <h3>Linked work items</h3>
+              </header>
+
+              <form className="linked-work-item-form" onSubmit={addLinkedWorkItem}>
+                <label>
+                  <span>Relationship</span>
+                  <select
+                    value={linkedRelation}
+                    onChange={(event) => setLinkedRelation(event.target.value)}
+                  >
+                    {workItemRelations.map((relation) => (
+                      <option value={relation} key={relation}>
+                        {relation}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  <span>Card</span>
+                  <select
+                    value={linkedCardId}
+                    onChange={(event) => setLinkedCardId(event.target.value)}
+                  >
+                    <option value="">Select card</option>
+                    {availableLinkedWorkItems.map((workItem) => (
+                      <option value={workItem.id} key={workItem.id}>
+                        {workItem.title}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <button
+                  className="small-action-button"
+                  type="submit"
+                  disabled={!selectedLinkedCard || hasDuplicateLinkedWorkItem}
+                >
+                  Add linked item
+                </button>
+              </form>
+
+              <div className="linked-work-item-list">
+                {linkedWorkItems.length > 0 ? (
+                  linkedWorkItems.map((linkedItem) => (
+                    <article className="linked-work-item" key={linkedItem.id}>
+                      <div>
+                        <span>{linkedItem.relation}</span>
+                        <strong>{linkedItem.title}</strong>
+                      </div>
+                      <button
+                        className="small-action-button"
+                        type="button"
+                        onClick={() =>
+                          setLinkedWorkItems((currentItems) =>
+                            currentItems.filter((item) => item.id !== linkedItem.id)
+                          )
+                        }
+                      >
+                        Remove
+                      </button>
+                    </article>
+                  ))
+                ) : (
+                  <p className="linked-work-item-empty">No linked work items yet.</p>
+                )}
+              </div>
+            </section>
 
             <section className="card-description-section">
               <header>

@@ -11,6 +11,7 @@ function WorkspaceProjectsPage({
   initialTab = "projects",
   onArchiveProject,
   onOpenProject,
+  onRestoreProject,
   shouldOpenCreateProject = false,
   workspace,
 }) {
@@ -55,7 +56,7 @@ function WorkspaceProjectsPage({
       ) : activeWorkspaceTab === "settings" ? (
         <WorkspaceSettings workspace={workspace} />
       ) : (
-        <ArchivedProjects projects={archivedProjects} />
+        <ArchivedProjects onRestoreProject={onRestoreProject} projects={archivedProjects} />
       )}
 
       {isCreatingProject && (

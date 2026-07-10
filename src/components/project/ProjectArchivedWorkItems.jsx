@@ -1,6 +1,6 @@
 import React from "react";
 
-function ArchivedItem({ meta, title, type }) {
+function ArchivedItem({ meta, onRestore, title, type }) {
   return (
     <article className="archived-work-item">
       <div>
@@ -8,11 +8,21 @@ function ArchivedItem({ meta, title, type }) {
         <h3>{title}</h3>
         {meta && <p>{meta}</p>}
       </div>
+      <button className="restore-action-button" type="button" onClick={onRestore}>
+        Restore
+      </button>
     </article>
   );
 }
 
-function ProjectArchivedWorkItems({ archivedCards, archivedEpics, archivedSprints }) {
+function ProjectArchivedWorkItems({
+  archivedCards,
+  archivedEpics,
+  archivedSprints,
+  onRestoreCard,
+  onRestoreEpic,
+  onRestoreSprint,
+}) {
   return (
     <div className="archived-work-page">
       <section className="archived-work-section" aria-labelledby="archived-cards-title">
@@ -22,6 +32,7 @@ function ProjectArchivedWorkItems({ archivedCards, archivedEpics, archivedSprint
             archivedCards.map((card) => (
               <ArchivedItem
                 meta={card.source}
+                onRestore={() => onRestoreCard(card.id)}
                 title={card.title}
                 type="Card"
                 key={card.id}
@@ -40,6 +51,7 @@ function ProjectArchivedWorkItems({ archivedCards, archivedEpics, archivedSprint
             archivedEpics.map((epic) => (
               <ArchivedItem
                 meta={`${epic.cards.length} cards, ${(epic.sprints ?? []).length} sprints`}
+                onRestore={() => onRestoreEpic(epic.id)}
                 title={epic.name}
                 type="Epic"
                 key={epic.id}
@@ -58,6 +70,7 @@ function ProjectArchivedWorkItems({ archivedCards, archivedEpics, archivedSprint
             archivedSprints.map((sprint) => (
               <ArchivedItem
                 meta={`${sprint.epicName} · ${sprint.cards.length} cards`}
+                onRestore={() => onRestoreSprint(sprint.id)}
                 title={sprint.title}
                 type="Sprint"
                 key={sprint.id}
