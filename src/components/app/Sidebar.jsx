@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import CreateWorkspaceModal from "../workspace/CreateWorkspaceModal.jsx";
 
 function WorkspaceNavGroup({ activePage, onOpenWorkspaceProjects, title, workspaces, children }) {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -67,11 +68,13 @@ function Sidebar({
   onOpenProject,
   onOpenUserSettings,
   onOpenWorkspaceProjects,
+  onCreateWorkspace,
   user,
   workspaces,
 }) {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const userMenuRef = useRef(null);
   const searchRef = useRef(null);
@@ -268,10 +271,17 @@ function Sidebar({
         title="YOUR WORKSPACES"
         workspaces={workspaces}
       >
-        <button className="create-workspace-button" type="button">
+        <button className="create-workspace-button" type="button" onClick={() => setIsCreatingWorkspace(true)}>
           + Create new workspace
         </button>
       </WorkspaceNavGroup>
+
+      {isCreatingWorkspace && (
+        <CreateWorkspaceModal
+          onClose={() => setIsCreatingWorkspace(false)}
+          onCreate={onCreateWorkspace}
+        />
+      )}
     </aside>
   );
 }
