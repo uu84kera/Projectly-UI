@@ -111,9 +111,31 @@ export function WorkItemCard({
   );
 }
 
-function BoardColumn({ cards, onOpenCard, onStatusChange, status, statuses, title }) {
+function BoardColumn({ cards, onCardDragStart, onDropCard, onOpenCard, onStatusChange, status, statuses, title }) {
+  const [isDragOver, setIsDragOver] = useState(false);
+
   return (
-    <section className="board-column">
+    <section
+      className={`board-column ${isDragOver ? "is-drag-over" : ""}`}
+      onDragEnter={(event) => {
+        event.preventDefault();
+        setIsDragOver(true);
+      }}
+      onDragOver={(event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+      }}
+      onDragLeave={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          setIsDragOver(false);
+        }
+      }}
+      onDrop={(event) => {
+        event.preventDefault();
+        setIsDragOver(false);
+        onDropCard(event, status);
+      }}
+    >
       <header className="board-column-header">
         <h3>{title}</h3>
         <span>{cards.length}</span>
@@ -123,7 +145,9 @@ function BoardColumn({ cards, onOpenCard, onStatusChange, status, statuses, titl
           cards.map((card) => (
             <WorkItemCard
               card={card}
+              draggable
               hideStatus
+              onDragStart={(event) => onCardDragStart(event, card.id)}
               onOpenCard={onOpenCard}
               onStatusChange={onStatusChange}
               statuses={statuses}
@@ -143,6 +167,7 @@ function ProjectBoard({ boardColumns, onOpenCard, onStatusChange }) {
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [newStatusTitle, setNewStatusTitle] = useState("");
   const statuses = [...cardStatuses, ...customStatuses];
+  const allBoardCards = boardColumns.flatMap((column) => column.cards);
 
   function createStatus(event) {
     event.preventDefault();
@@ -162,6 +187,21 @@ function ProjectBoard({ boardColumns, onOpenCard, onStatusChange }) {
     setIsStatusModalOpen(false);
   }
 
+  function handleCardDragStart(event, cardId) {
+    event.dataTransfer.setData("text/plain", cardId);
+    event.dataTransfer.effectAllowed = "move";
+  }
+
+  function handleDropCard(event, status) {
+    const cardId = event.dataTransfer.getData("text/plain");
+
+    if (!cardId || !status) {
+      return;
+    }
+
+    onStatusChange(cardId, status);
+  }
+
   return (
     <div className="board-view-panel">
       <div className="board-toolbar">
@@ -173,6 +213,8 @@ function ProjectBoard({ boardColumns, onOpenCard, onStatusChange }) {
         {boardColumns.map((column) => (
           <BoardColumn
             cards={column.cards}
+            onCardDragStart={handleCardDragStart}
+            onDropCard={handleDropCard}
             onOpenCard={onOpenCard}
             onStatusChange={onStatusChange}
             status={column.status}
@@ -183,8 +225,11 @@ function ProjectBoard({ boardColumns, onOpenCard, onStatusChange }) {
         ))}
         {customStatuses.map((status) => (
           <BoardColumn
-            cards={[]}
+            cards={allBoardCards.filter((card) => card.status === status.value)}
+            onCardDragStart={handleCardDragStart}
+            onDropCard={handleDropCard}
             onOpenCard={onOpenCard}
+            onStatusChange={onStatusChange}
             status={status.value}
             statuses={statuses}
             title={status.label}

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { guestWorkspaces, inboxItems, user, workspaces } from "../../data/mockWorkspaceData.js";
+import { guestWorkspaces, inboxItems, user, workspaces as initialWorkspaces } from "../../data/mockWorkspaceData.js";
 import AllProjectsPage from "../../pages/app/AllProjectsPage.jsx";
 import InboxPage from "../../pages/app/InboxPage.jsx";
 import ProjectBacklogPage from "../../pages/app/ProjectBacklogPage.jsx";
@@ -11,6 +11,7 @@ function AppShell() {
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
   const [activePage, setActivePage] = useState({ name: "all-projects" });
   const [archivedProjectIds, setArchivedProjectIds] = useState([]);
+  const [workspaces, setWorkspaces] = useState(initialWorkspaces);
   const activeWorkspace =
     workspaces.find((workspace) => workspace.id === activePage.workspaceId) ?? workspaces[0];
   const allProjects = workspaces.flatMap((workspace) => workspace.projects);
@@ -60,6 +61,7 @@ function AppShell() {
       workspaceId,
       workspaceTab,
       openCreateProject: options.openCreateProject ?? false,
+      createProjectRequestId: options.openCreateProject ? Date.now() : null,
     });
   }
 
@@ -75,6 +77,65 @@ function AppShell() {
     });
   }
 
+  function createProject(workspaceId, projectInput) {
+    const projectId = `project-${Date.now()}`;
+
+    setWorkspaces((currentWorkspaces) =>
+      currentWorkspaces.map((workspace) =>
+        workspace.id === workspaceId
+          ? {
+              ...workspace,
+              projects: [
+                ...workspace.projects,
+                {
+                  id: projectId,
+                  name: projectInput.title,
+                  description: projectInput.description,
+                },
+              ],
+            }
+          : workspace
+      )
+    );
+  }
+
+  function updateProject(projectId, projectInput) {
+    setWorkspaces((currentWorkspaces) =>
+      currentWorkspaces.map((workspace) => ({
+        ...workspace,
+        projects: workspace.projects.map((project) =>
+          project.id === projectId
+            ? {
+                ...project,
+                ...projectInput,
+              }
+            : project
+        ),
+      }))
+    );
+  }
+
+  function createWorkspace(workspaceInput) {
+    const workspaceId = `workspace-${Date.now()}`;
+
+    setWorkspaces((currentWorkspaces) => [
+      ...currentWorkspaces,
+      {
+        id: workspaceId,
+        name: workspaceInput.name,
+        members: [user],
+        singleBoardGuests: [],
+        projects: [],
+      },
+    ]);
+
+    setActivePage({
+      name: "workspace-projects",
+      workspaceId,
+      workspaceTab: "projects",
+    });
+  }
+
   return (
     <main className={`app-layout ${isSidebarVisible ? "" : "is-sidebar-hidden"}`}>
       {isSidebarVisible && (
@@ -85,6 +146,7 @@ function AppShell() {
           onOpenProject={openProject}
           onOpenUserSettings={openUserSettings}
           onOpenWorkspaceProjects={openWorkspaceProjects}
+          onCreateWorkspace={createWorkspace}
           user={user}
           guestWorkspaces={guestWorkspaces}
           workspaces={workspaces}
@@ -124,13 +186,16 @@ function AppShell() {
       ) : activePage.name === "project-backlog" ? (
         <ProjectBacklogPage
           onArchiveProject={archiveProject}
+          onUpdateProject={updateProject}
           project={activeProject}
           workspace={activeProjectWorkspace}
         />
       ) : activePage.name === "workspace-projects" ? (
         <WorkspaceProjectsPage
           archivedProjectIds={archivedProjectIds}
+          createProjectRequestId={activePage.createProjectRequestId}
           initialTab={activePage.workspaceTab}
+          onCreateProject={createProject}
           shouldOpenCreateProject={activePage.openCreateProject}
           onArchiveProject={archiveProject}
           onOpenProject={openProject}

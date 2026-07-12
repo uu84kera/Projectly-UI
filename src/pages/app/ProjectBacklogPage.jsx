@@ -22,7 +22,7 @@ function formatStatusLabel(status) {
   return labels[status] ?? "Todo";
 }
 
-function ProjectBacklogPage({ onArchiveProject, project, workspace }) {
+function ProjectBacklogPage({ onArchiveProject, onUpdateProject, project, workspace }) {
   const [activeTab, setActiveTab] = useState("Backlog");
   const [expandedEpicId, setExpandedEpicId] = useState(null);
   const [localEpics, setLocalEpics] = useState(project.epics ?? []);
@@ -110,13 +110,15 @@ function ProjectBacklogPage({ onArchiveProject, project, workspace }) {
     done: sprintCards.filter((card) => card.status === "done" || card.completed).length,
   };
   const boardColumns = [
-    { title: "Todo", cards: startedSprintCards.filter((card) => card.status === "todo") },
+    { title: "Todo", status: "todo", cards: startedSprintCards.filter((card) => card.status === "todo") },
     {
       title: "In Progress",
+      status: "in-progress",
       cards: startedSprintCards.filter((card) => card.status === "in-progress"),
     },
     {
       title: "Done",
+      status: "done",
       cards: startedSprintCards.filter((card) => card.status === "done" || card.completed),
     },
   ];
@@ -510,7 +512,11 @@ function ProjectBacklogPage({ onArchiveProject, project, workspace }) {
       ) : activeTab === "Members" ? (
         <ProjectMembers project={project} workspace={workspace} />
       ) : activeTab === "Settings" ? (
-        <ProjectSettings onArchiveProject={onArchiveProject} project={project} />
+        <ProjectSettings
+          onArchiveProject={onArchiveProject}
+          onUpdateProject={onUpdateProject}
+          project={project}
+        />
       ) : activeTab === "Board" ? (
         <ProjectBoard
           boardColumns={boardColumns}

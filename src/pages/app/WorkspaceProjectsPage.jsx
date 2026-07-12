@@ -8,8 +8,10 @@ import WorkspaceTabs from "../../components/workspace/WorkspaceTabs.jsx";
 
 function WorkspaceProjectsPage({
   archivedProjectIds = [],
+  createProjectRequestId,
   initialTab = "projects",
   onArchiveProject,
+  onCreateProject,
   onOpenProject,
   onRestoreProject,
   shouldOpenCreateProject = false,
@@ -24,7 +26,7 @@ function WorkspaceProjectsPage({
     if (shouldOpenCreateProject) {
       setIsCreatingProject(true);
     }
-  }, [shouldOpenCreateProject]);
+  }, [createProjectRequestId, shouldOpenCreateProject]);
 
   return (
     <section className="app-content" aria-labelledby="workspace-projects-title">
@@ -62,7 +64,7 @@ function WorkspaceProjectsPage({
       {isCreatingProject && (
         <CreateProjectModal
           onClose={() => setIsCreatingProject(false)}
-          onCreate={() => {}}
+          onCreate={(projectInput) => onCreateProject(workspace.id, projectInput)}
         />
       )}
     </section>
