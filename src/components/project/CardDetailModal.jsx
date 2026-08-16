@@ -1259,22 +1259,24 @@ function CardDetailModal({
                             ].filter(Boolean).join(" · ") || "Repository link"}
                           </span>
                         </div>
-                        <button
-                          className="small-action-button"
-                          type="button"
-                          disabled={isSavingDetail}
-                          onClick={() => editGitHubLink(link)}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          className="small-action-button"
-                          type="button"
-                          disabled={isSavingDetail}
-                          onClick={() => removeGitHubLink(link.id)}
-                        >
-                          Remove
-                        </button>
+                        <div className="github-link-actions">
+                          <button
+                            className="small-action-button"
+                            type="button"
+                            disabled={isSavingDetail}
+                            onClick={() => editGitHubLink(link)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="small-action-button"
+                            type="button"
+                            disabled={isSavingDetail}
+                            onClick={() => removeGitHubLink(link.id)}
+                          >
+                            Remove
+                          </button>
+                        </div>
                       </article>
                     ))}
                   </div>
