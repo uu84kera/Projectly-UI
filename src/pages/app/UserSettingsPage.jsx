@@ -4,6 +4,7 @@ import {
   claimGitHubAppInstallation,
   disconnectGitHubAppInstallation,
   listGitHubAppInstallations,
+  listReconnectableGitHubAppInstallations,
   updateEmail,
   updateUsername,
   updateUserTheme,
@@ -46,12 +47,14 @@ function UserSettingsPage({ onUserUpdated, user }) {
   const [themeMessage, setThemeMessage] = useState("");
   const [themeError, setThemeError] = useState("");
   const [githubInstallations, setGithubInstallations] = useState([]);
+  const [reconnectableGithubInstallations, setReconnectableGithubInstallations] = useState([]);
   const [githubMessage, setGithubMessage] = useState("");
   const [githubError, setGithubError] = useState("");
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSavingEmail, setIsSavingEmail] = useState(false);
   const [isSavingTheme, setIsSavingTheme] = useState(false);
   const [isLoadingGithub, setIsLoadingGithub] = useState(false);
+  const [reconnectingGithubInstallationId, setReconnectingGithubInstallationId] = useState(null);
   const [disconnectingGithubInstallationId, setDisconnectingGithubInstallationId] = useState(null);
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
   const themeMenuRef = useRef(null);
@@ -110,9 +113,13 @@ function UserSettingsPage({ onUserUpdated, user }) {
       setIsLoadingGithub(true);
       setGithubError("");
       try {
-        const installations = await listGitHubAppInstallations();
+        const [installations, reconnectableInstallations] = await Promise.all([
+          listGitHubAppInstallations(),
+          listReconnectableGitHubAppInstallations(),
+        ]);
         if (isMounted) {
           setGithubInstallations(installations ?? []);
+          setReconnectableGithubInstallations(reconnectableInstallations ?? []);
         }
       } catch (error) {
         if (isMounted) {
@@ -127,7 +134,7 @@ function UserSettingsPage({ onUserUpdated, user }) {
 
     async function claimInstallationIfNeeded() {
       const searchParams = new URLSearchParams(window.location.search);
-      const installationId = searchParams.get("github_installation_id");
+      const installationId = searchParams.get("github_installation_id") ?? searchParams.get("installation_id");
 
       if (!installationId) {
         await loadGithubInstallations();
@@ -139,9 +146,13 @@ function UserSettingsPage({ onUserUpdated, user }) {
       setGithubError("");
       try {
         await claimGitHubAppInstallation(installationId);
-        const installations = await listGitHubAppInstallations();
+        const [installations, reconnectableInstallations] = await Promise.all([
+          listGitHubAppInstallations(),
+          listReconnectableGitHubAppInstallations(),
+        ]);
         if (isMounted) {
           setGithubInstallations(installations ?? []);
+          setReconnectableGithubInstallations(reconnectableInstallations ?? []);
           setGithubMessage("GitHub connected.");
           window.history.replaceState({}, "", "/settings");
         }
@@ -233,14 +244,38 @@ function UserSettingsPage({ onUserUpdated, user }) {
     window.location.href = githubAppInstallUrl;
   }
 
+  async function reconnectGithubApp(installationId) {
+    setGithubMessage("");
+    setGithubError("");
+    setReconnectingGithubInstallationId(installationId);
+    try {
+      await claimGitHubAppInstallation(installationId);
+      const [installations, reconnectableInstallations] = await Promise.all([
+        listGitHubAppInstallations(),
+        listReconnectableGitHubAppInstallations(),
+      ]);
+      setGithubInstallations(installations ?? []);
+      setReconnectableGithubInstallations(reconnectableInstallations ?? []);
+      setGithubMessage("GitHub reconnected.");
+    } catch (error) {
+      setGithubError(error.message);
+    } finally {
+      setReconnectingGithubInstallationId(null);
+    }
+  }
+
   async function disconnectGithubApp(installationId) {
     setGithubMessage("");
     setGithubError("");
     setDisconnectingGithubInstallationId(installationId);
     try {
       await disconnectGitHubAppInstallation(installationId);
-      const installations = await listGitHubAppInstallations();
+      const [installations, reconnectableInstallations] = await Promise.all([
+        listGitHubAppInstallations(),
+        listReconnectableGitHubAppInstallations(),
+      ]);
       setGithubInstallations(installations ?? []);
+      setReconnectableGithubInstallations(reconnectableInstallations ?? []);
       setGithubMessage("GitHub disconnected.");
     } catch (error) {
       setGithubError(error.message);
@@ -393,6 +428,29 @@ function UserSettingsPage({ onUserUpdated, user }) {
                 </article>
               ))}
             </div>
+          ) : reconnectableGithubInstallations.length > 0 ? (
+            <div className="github-installation-list">
+              <p>No GitHub App installation connected yet.</p>
+              {reconnectableGithubInstallations.map((installation) => (
+                <article className="github-installation-item" key={installation.id}>
+                  <div>
+                    <strong>{installation.account_login || "GitHub account"}</strong>
+                    <span>{installation.account_type || "GitHub App installation"}</span>
+                  </div>
+                  <div className="github-installation-actions">
+                    <span className="github-installation-status">Installed on GitHub</span>
+                    <button
+                      className="settings-save-button settings-reconnect-button"
+                      type="button"
+                      disabled={reconnectingGithubInstallationId === installation.installation_id}
+                      onClick={() => reconnectGithubApp(installation.installation_id)}
+                    >
+                      {reconnectingGithubInstallationId === installation.installation_id ? "Reconnecting..." : "Reconnect"}
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
           ) : (
             <div className="github-connect-settings">
               <p>No GitHub App installation connected yet.</p>
@@ -409,7 +467,9 @@ function UserSettingsPage({ onUserUpdated, user }) {
               disabled={!githubAppInstallUrl || isLoadingGithub}
               onClick={connectGithubApp}
             >
-              {githubInstallations.length > 0 ? "Connect another GitHub account" : "Connect GitHub"}
+              {githubInstallations.length > 0 || reconnectableGithubInstallations.length > 0
+                ? "Connect another GitHub account"
+                : "Connect GitHub"}
             </button>
           </div>
         </section>

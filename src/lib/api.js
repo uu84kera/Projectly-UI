@@ -585,6 +585,11 @@ export async function listGitHubAppInstallations() {
   return payload.data;
 }
 
+export async function listReconnectableGitHubAppInstallations() {
+  const payload = await apiFetch("/github/app/installations/reconnectable");
+  return payload.data;
+}
+
 export async function claimGitHubAppInstallation(installationId) {
   const payload = await apiFetch(
     `/github/app/installations/${installationId}/claim`,

@@ -3,7 +3,8 @@
   position: relative;
   --sidebar-width: 220px;
   grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   color: #172b4d;
   background: #ffffff;
 }
@@ -70,9 +71,12 @@ body.is-resizing-sidebar {
 
 .app-sidebar {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  min-height: 0;
   flex-direction: column;
   gap: 18px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border-right: 1px solid #dfe1e6;
   background: #f7f8fa;
   padding: 18px 14px;
@@ -415,7 +419,10 @@ body.is-resizing-sidebar {
 }
 
 .app-content {
+  height: 100vh;
   min-width: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 30px 36px 30px 58px;
   background: #ffffff;
 }
@@ -1174,6 +1181,12 @@ body.is-resizing-sidebar {
 .settings-disconnect-button:disabled {
   cursor: not-allowed;
   opacity: 0.65;
+}
+
+.settings-reconnect-button {
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 12px;
 }
 
 .settings-delete-button:hover {
@@ -3163,6 +3176,17 @@ select.card-status-select {
   gap: 10px;
 }
 
+.github-display-id-hint {
+  margin: 0;
+  border: 1px solid #dfe1e6;
+  border-radius: 8px;
+  background: #fbfcfe;
+  padding: 10px 12px;
+  color: #44546f;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .github-development-summary {
   display: flex;
   flex-wrap: wrap;
@@ -3726,6 +3750,9 @@ select.card-status-select {
 @media (max-width: 760px) {
   .app-layout {
     grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
   }
 
   .sidebar-toggle-button,
@@ -3739,12 +3766,16 @@ select.card-status-select {
   }
 
   .app-sidebar {
+    height: auto;
     min-height: auto;
+    overflow: visible;
     border-right: 0;
     border-bottom: 1px solid #dfe1e6;
   }
 
   .app-content {
+    height: auto;
+    overflow: visible;
     padding: 58px 18px 24px;
   }
 
