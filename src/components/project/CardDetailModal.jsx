@@ -1262,6 +1262,11 @@ function CardDetailModal({
                     <span>Connected GitHub</span>
                     <strong>{connectedGithubLabel || "GitHub App"}</strong>
                   </div>
+                  {displayCard.displayId && (
+                    <p className="github-display-id-hint">
+                      Reference this card in GitHub commits or pull requests with {displayCard.displayId}.
+                    </p>
+                  )}
                   <div className="github-development-panel">
                     <div className="github-development-summary">
                       <span>{githubEvents?.events?.length ?? 0} events</span>
