@@ -16,8 +16,9 @@ export function clearAuthToken() {
 
 export async function apiFetch(path, options = {}) {
   const token = getAuthToken();
+  const isFormData = options.body instanceof FormData;
   const headers = {
-    "Content-Type": "application/json",
+    ...(isFormData ? {} : { "Content-Type": "application/json" }),
     ...(options.headers ?? {}),
   };
 
@@ -47,6 +48,39 @@ export async function apiFetch(path, options = {}) {
   }
 
   return payload;
+}
+
+export function buildApiUrl(path) {
+  if (!path) {
+    return "";
+  }
+  if (/^https?:\/\//i.test(path) || path.startsWith("blob:")) {
+    return path;
+  }
+  return `${API_BASE_URL}${path.startsWith("/api/") ? path.slice(4) : path}`;
+}
+
+export async function downloadCardAttachment(attachmentId) {
+  const token = getAuthToken();
+  const headers = {};
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/attachments/${attachmentId}/download`, {
+    headers,
+  });
+
+  if (!response.ok) {
+    const contentType = response.headers.get("content-type") ?? "";
+    const payload = contentType.includes("application/json")
+      ? await response.json()
+      : null;
+    throw new Error(payload?.detail ?? payload?.message ?? "Attachment download failed");
+  }
+
+  return response.blob();
 }
 
 export async function loginUser({ email, password }) {
@@ -476,6 +510,17 @@ export async function createCardAttachment(
       file_type: fileType || null,
       file_size: fileSize ?? null,
     }),
+  });
+  return payload.data;
+}
+
+export async function uploadCardAttachment(cardId, file) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const payload = await apiFetch(`/cards/${cardId}/attachments/upload`, {
+    method: "POST",
+    body: formData,
   });
   return payload.data;
 }

@@ -7,7 +7,9 @@ export const cardStatuses = [
 ];
 
 export function formatStatus(status) {
-  return cardStatuses.find((option) => option.value === status)?.label ?? "Todo";
+  return (
+    cardStatuses.find((option) => option.value === status)?.label ?? "Todo"
+  );
 }
 
 export function WorkItemCard({
@@ -25,7 +27,10 @@ export function WorkItemCard({
 
   useEffect(() => {
     function closeStatusMenuOnOutsideClick(event) {
-      if (!statusMenuRef.current || statusMenuRef.current.contains(event.target)) {
+      if (
+        !statusMenuRef.current ||
+        statusMenuRef.current.contains(event.target)
+      ) {
         return;
       }
 
@@ -46,9 +51,10 @@ export function WorkItemCard({
       onDragStart={onDragStart}
     >
       <label className="work-item-check">
-        <input type="checkbox" defaultChecked={card.completed} />
         <span className="work-item-text">
-          {card.displayId && <small className="card-display-id">{card.displayId}</small>}
+          {card.displayId && (
+            <small className="card-display-id">{card.displayId}</small>
+          )}
           <span>{card.title}</span>
         </span>
       </label>
@@ -62,8 +68,16 @@ export function WorkItemCard({
               aria-expanded={isStatusMenuOpen}
               onClick={() => setIsStatusMenuOpen((isOpen) => !isOpen)}
             >
-              Status: {statuses.find((option) => option.value === status)?.label ?? formatStatus(status)}
-              <svg aria-hidden="true" fill="none" height="12" viewBox="0 0 24 24" width="12">
+              Status:{" "}
+              {statuses.find((option) => option.value === status)?.label ??
+                formatStatus(status)}
+              <svg
+                aria-hidden="true"
+                fill="none"
+                height="12"
+                viewBox="0 0 24 24"
+                width="12"
+              >
                 <path
                   d="m6 9 6 6 6-6"
                   stroke="currentColor"
@@ -99,7 +113,13 @@ export function WorkItemCard({
           aria-label={`Open ${card.title} detail`}
           onClick={() => onOpenCard(card)}
         >
-          <svg aria-hidden="true" fill="none" height="15" viewBox="0 0 24 24" width="15">
+          <svg
+            aria-hidden="true"
+            fill="none"
+            height="15"
+            viewBox="0 0 24 24"
+            width="15"
+          >
             <path
               d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"
               stroke="currentColor"
@@ -132,7 +152,10 @@ function BoardColumn({
 
   useEffect(() => {
     function closeStatusMenuOnOutsideClick(event) {
-      if (!statusMenuRef.current || statusMenuRef.current.contains(event.target)) {
+      if (
+        !statusMenuRef.current ||
+        statusMenuRef.current.contains(event.target)
+      ) {
         return;
       }
 
@@ -245,7 +268,9 @@ function ProjectBoard({
   const [editingStatus, setEditingStatus] = useState(null);
   const [newStatusTitle, setNewStatusTitle] = useState("");
   const boardColumnStatuses = boardColumns.map((column) => column.status);
-  const extraStatuses = statuses.filter((status) => !boardColumnStatuses.includes(status.value));
+  const extraStatuses = statuses.filter(
+    (status) => !boardColumnStatuses.includes(status.value),
+  );
 
   function createStatus(event) {
     event.preventDefault();
@@ -289,7 +314,11 @@ function ProjectBoard({
   return (
     <div className="board-view-panel">
       <div className="board-toolbar">
-        <button className="small-action-button" type="button" onClick={() => setIsStatusModalOpen(true)}>
+        <button
+          className="small-action-button"
+          type="button"
+          onClick={() => setIsStatusModalOpen(true)}
+        >
           Create new status
         </button>
       </div>
@@ -333,7 +362,12 @@ function ProjectBoard({
       </div>
       {isStatusModalOpen && (
         <div className="modal-backdrop" role="presentation">
-          <section className="simple-modal" aria-labelledby="create-status-title" role="dialog" aria-modal="true">
+          <section
+            className="simple-modal"
+            aria-labelledby="create-status-title"
+            role="dialog"
+            aria-modal="true"
+          >
             <header className="simple-modal-header">
               <h2 id="create-status-title">Create new status</h2>
               <button
@@ -342,8 +376,19 @@ function ProjectBoard({
                 aria-label="Close create status modal"
                 onClick={() => setIsStatusModalOpen(false)}
               >
-                <svg aria-hidden="true" fill="none" height="20" viewBox="0 0 24 24" width="20">
-                  <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+                <svg
+                  aria-hidden="true"
+                  fill="none"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  width="20"
+                >
+                  <path
+                    d="M6 6l12 12M18 6 6 18"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeWidth="2"
+                  />
                 </svg>
               </button>
             </header>
@@ -360,7 +405,11 @@ function ProjectBoard({
                 />
               </label>
               <footer className="sprint-modal-footer">
-                <button className="modal-cancel-button" type="button" onClick={() => setIsStatusModalOpen(false)}>
+                <button
+                  className="modal-cancel-button"
+                  type="button"
+                  onClick={() => setIsStatusModalOpen(false)}
+                >
                   Cancel
                 </button>
                 <button className="modal-update-button" type="submit">
@@ -373,7 +422,12 @@ function ProjectBoard({
       )}
       {editingStatus && (
         <div className="modal-backdrop" role="presentation">
-          <section className="simple-modal" aria-labelledby="edit-status-title" role="dialog" aria-modal="true">
+          <section
+            className="simple-modal"
+            aria-labelledby="edit-status-title"
+            role="dialog"
+            aria-modal="true"
+          >
             <header className="simple-modal-header">
               <h2 id="edit-status-title">Edit status</h2>
               <button
@@ -385,8 +439,19 @@ function ProjectBoard({
                   setNewStatusTitle("");
                 }}
               >
-                <svg aria-hidden="true" fill="none" height="20" viewBox="0 0 24 24" width="20">
-                  <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+                <svg
+                  aria-hidden="true"
+                  fill="none"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  width="20"
+                >
+                  <path
+                    d="M6 6l12 12M18 6 6 18"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeWidth="2"
+                  />
                 </svg>
               </button>
             </header>
