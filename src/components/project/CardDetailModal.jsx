@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
-  createCardAttachment,
+  buildApiUrl,
   createCardComment,
   createCardLabel,
   createCardLink,
@@ -10,11 +10,13 @@ import {
   deleteCardLabel,
   deleteCardLink,
   deleteCardMember,
+  downloadCardAttachment,
   getCardDevelopmentEvents,
   getCardDetail,
   listGitHubAppInstallations,
   listCommentMentionUsers,
   listProjectMembers,
+  uploadCardAttachment,
   updateCardComment,
 } from "../../lib/api.js";
 
@@ -156,7 +158,7 @@ function mapDetailAttachment(attachment) {
     id: attachment.id,
     name: attachment.file_name,
     size: attachment.file_size ?? 0,
-    url: attachment.file_url,
+    url: buildApiUrl(attachment.file_url),
     type: attachment.file_type,
   };
 }
@@ -470,14 +472,7 @@ function CardDetailModal({
     setIsSavingDetail(true);
     try {
       const savedAttachments = await Promise.all(
-        selectedFiles.map((file) =>
-          createCardAttachment(card.id, {
-            fileName: file.name,
-            fileUrl: URL.createObjectURL(file),
-            fileType: file.type || null,
-            fileSize: file.size,
-          })
-        )
+        selectedFiles.map((file) => uploadCardAttachment(card.id, file))
       );
       setCardAttachments((currentAttachments) => [
         ...currentAttachments,
@@ -503,6 +498,25 @@ function CardDetailModal({
       setDetailError(error.message);
     } finally {
       setIsSavingDetail(false);
+    }
+  }
+
+  async function openAttachment(event, attachment) {
+    event.preventDefault();
+    setDetailError("");
+
+    if (!attachment.id || attachment.url?.startsWith("blob:")) {
+      window.open(attachment.url, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    try {
+      const blob = await downloadCardAttachment(attachment.id);
+      const objectUrl = URL.createObjectURL(blob);
+      window.open(objectUrl, "_blank", "noopener,noreferrer");
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } catch (error) {
+      setDetailError(error.message);
     }
   }
 
@@ -974,7 +988,6 @@ function CardDetailModal({
         <div className="card-detail-body">
           <section className="card-detail-main">
             <label className="card-title-row">
-              <input type="checkbox" defaultChecked={displayCard.completed} />
               <input
                 className="card-title-input"
                 id="card-detail-title"
@@ -1132,7 +1145,12 @@ function CardDetailModal({
                   <div className="comment-item-attachments">
                     {cardAttachments.map((attachment) => (
                       <span className="card-attachment-item" key={attachment.id}>
-                        <a href={attachment.url} target="_blank" rel="noreferrer">
+                        <a
+                          href={attachment.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={(event) => openAttachment(event, attachment)}
+                        >
                           <svg aria-hidden="true" fill="none" height="13" viewBox="0 0 24 24" width="13">
                             <path d="m21.4 11.6-8.8 8.8a6 6 0 0 1-8.5-8.5l9.4-9.4a4 4 0 0 1 5.7 5.7L9.7 17.7a2 2 0 1 1-2.8-2.8l8.8-8.8" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                           </svg>
@@ -1489,12 +1507,18 @@ function CardDetailModal({
                         {comment.attachments.length > 0 && (
                           <div className="comment-item-attachments">
                             {comment.attachments.map((attachment) => (
-                              <span key={attachment.id}>
+                              <a
+                                href={attachment.url}
+                                key={attachment.id}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={(event) => openAttachment(event, attachment)}
+                              >
                                 <svg aria-hidden="true" fill="none" height="13" viewBox="0 0 24 24" width="13">
                                   <path d="m21.4 11.6-8.8 8.8a6 6 0 0 1-8.5-8.5l9.4-9.4a4 4 0 0 1 5.7 5.7L9.7 17.7a2 2 0 1 1-2.8-2.8l8.8-8.8" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                                 </svg>
                                 {attachment.name}
-                              </span>
+                              </a>
                             ))}
                           </div>
                         )}
