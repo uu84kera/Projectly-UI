@@ -203,6 +203,14 @@ export async function deleteWorkspaceMember(memberId) {
   });
 }
 
+export async function updateWorkspaceMemberRole(memberId, role) {
+  const payload = await apiFetch(`/workspaces/members/${memberId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ role }),
+  });
+  return payload.data;
+}
+
 export async function listArchivedProjects() {
   const payload = await apiFetch("/projects/deleted");
   return payload.data;

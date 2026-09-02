@@ -792,7 +792,8 @@ body.is-resizing-sidebar {
   gap: 8px;
 }
 
-.member-invite-form input {
+.member-invite-form input,
+.member-invite-form select {
   width: min(280px, 100%);
   min-height: 36px;
   border: 1px solid #d0d7de;
@@ -801,6 +802,10 @@ body.is-resizing-sidebar {
   color: #172b4d;
   background: #ffffff;
   font: inherit;
+}
+
+.member-invite-form select {
+  width: 118px;
 }
 
 .member-form-message {
@@ -817,7 +822,7 @@ body.is-resizing-sidebar {
 
 .member-row {
   display: grid;
-  grid-template-columns: minmax(240px, 1.2fr) minmax(160px, 0.8fr) auto;
+  grid-template-columns: minmax(240px, 1fr) auto;
   gap: 14px;
   align-items: center;
   border-bottom: 1px solid #dfe1e6;
@@ -909,6 +914,13 @@ body.is-resizing-sidebar {
   font-size: 12px;
   font-weight: 800;
   cursor: pointer;
+}
+
+.member-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .member-row-action:hover {
