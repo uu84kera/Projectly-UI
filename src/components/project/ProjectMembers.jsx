@@ -6,7 +6,7 @@ function ProjectMemberAvatar({ initials }) {
   return <span className="member-avatar">{initials}</span>;
 }
 
-function ProjectMemberRow({ actionLabel, actionTone = "default", member, memberType, onAction, role }) {
+function ProjectMemberRow({ actionLabel, actionTone = "default", member, onAction, role }) {
   return (
     <article className="member-row">
       <div className="member-profile">
@@ -19,7 +19,6 @@ function ProjectMemberRow({ actionLabel, actionTone = "default", member, memberT
           {role && <span className={`member-role-badge ${role.toLowerCase()}`}>{role}</span>}
         </div>
       </div>
-      <span className="member-type">{memberType}</span>
       {actionLabel ? (
         <button
           className={`member-row-action ${actionTone === "danger" ? "danger" : ""}`}
@@ -189,7 +188,6 @@ function ProjectMembers({ currentUserId, project }) {
                 actionLabel={member.actionLabel}
                 actionTone={member.actionTone}
                 member={member}
-                memberType={member.memberType}
                 onAction={() => removeProjectMember(member)}
                 role={member.role}
                 key={`${member.memberType}-${member.id}`}

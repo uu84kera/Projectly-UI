@@ -5,6 +5,7 @@ import {
   deleteProjectMember,
   deleteWorkspaceMember,
   listProjectMembers,
+  updateWorkspaceMemberRole,
 } from "../../lib/api.js";
 
 function MemberAvatar({ initials }) {
@@ -25,7 +26,15 @@ function getInitials(name) {
     .toUpperCase();
 }
 
-function WorkspaceMemberRow({ actionLabel, isRemoving, member, onRemove }) {
+function WorkspaceMemberRow({
+  actionLabel,
+  isRemoving,
+  isUpdatingRole,
+  member,
+  onRemove,
+  onUpdateRole,
+  roleActionLabel,
+}) {
 
   return (
     <article className="member-row">
@@ -39,16 +48,29 @@ function WorkspaceMemberRow({ actionLabel, isRemoving, member, onRemove }) {
           <RoleBadge role={member.role} />
         </div>
       </div>
-      <span className="member-type">{member.membership}</span>
-      {actionLabel ? (
-        <button
-          className={`member-row-action ${["Leave", "Remove"].includes(actionLabel) ? "danger" : ""}`}
-          type="button"
-          disabled={isRemoving}
-          onClick={() => onRemove(member)}
-        >
-          {actionLabel}
-        </button>
+      {actionLabel || roleActionLabel ? (
+        <div className="member-row-actions">
+          {roleActionLabel && (
+            <button
+              className="member-row-action"
+              type="button"
+              disabled={isUpdatingRole}
+              onClick={() => onUpdateRole(member)}
+            >
+              {isUpdatingRole ? "Updating..." : roleActionLabel}
+            </button>
+          )}
+          {actionLabel && (
+            <button
+              className={`member-row-action ${["Leave", "Remove"].includes(actionLabel) ? "danger" : ""}`}
+              type="button"
+              disabled={isRemoving}
+              onClick={() => onRemove(member)}
+            >
+              {actionLabel}
+            </button>
+          )}
+        </div>
       ) : (
         <span className="member-row-action-placeholder" />
       )}
@@ -150,11 +172,13 @@ function SingleBoardGuestRow({ guest, isRemoving, onRemove }) {
 function WorkspaceMembers({ currentUserId, onMembersChanged, workspace }) {
   const [activeMemberTab, setActiveMemberTab] = useState("workspace-members");
   const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("member");
   const [inviteMessage, setInviteMessage] = useState("");
   const [inviteError, setInviteError] = useState("");
   const [isSendingInvite, setIsSendingInvite] = useState(false);
   const [removeError, setRemoveError] = useState("");
   const [removingMemberId, setRemovingMemberId] = useState(null);
+  const [updatingRoleMemberId, setUpdatingRoleMemberId] = useState(null);
   const [projectGuests, setProjectGuests] = useState([]);
   const [guestError, setGuestError] = useState("");
   const [isLoadingGuests, setIsLoadingGuests] = useState(false);
@@ -235,12 +259,30 @@ function WorkspaceMembers({ currentUserId, onMembersChanged, workspace }) {
 
   function getMemberActionLabel(member) {
     const isCurrentUser = String(member.id) === String(currentUserId);
+    const memberRole = member.role?.toLowerCase();
+    const currentUserRole = currentMember?.role?.toLowerCase();
 
-    if (currentUserCanManageMembers) {
-      return isCurrentUser ? "" : "Remove";
+    if (isCurrentUser) {
+      return currentUserRole === "owner" ? "" : "Leave";
     }
 
-    return isCurrentUser ? "Leave" : "";
+    if (!currentUserCanManageMembers || memberRole === "owner") {
+      return "";
+    }
+
+    return "Remove";
+  }
+
+  function getRoleActionLabel(member) {
+    const isCurrentUser = String(member.id) === String(currentUserId);
+    const memberRole = member.role?.toLowerCase();
+    const currentUserRole = currentMember?.role?.toLowerCase();
+
+    if (currentUserRole !== "owner" || isCurrentUser || memberRole === "owner") {
+      return "";
+    }
+
+    return memberRole === "admin" ? "Make member" : "Make admin";
   }
 
   async function sendWorkspaceInvitation(event) {
@@ -255,8 +297,9 @@ function WorkspaceMembers({ currentUserId, onMembersChanged, workspace }) {
     setInviteError("");
     setIsSendingInvite(true);
     try {
-      await createWorkspaceInvitation(workspace.id, { email });
+      await createWorkspaceInvitation(workspace.id, { email, role: inviteRole });
       setInviteEmail("");
+      setInviteRole("member");
       setInviteMessage("Workspace invitation sent.");
     } catch (error) {
       setInviteError(error.message);
@@ -284,6 +327,30 @@ function WorkspaceMembers({ currentUserId, onMembersChanged, workspace }) {
       setRemoveError(error.message);
     } finally {
       setRemovingMemberId(null);
+    }
+  }
+
+  async function updateMemberRole(member) {
+    const memberId = member.workspaceMemberId ?? member.id;
+    const memberRole = member.role?.toLowerCase();
+    const nextRole = memberRole === "admin" ? "member" : "admin";
+
+    if (!memberId) {
+      setRemoveError("Workspace member id is missing");
+      return;
+    }
+
+    setInviteMessage("");
+    setInviteError("");
+    setRemoveError("");
+    setUpdatingRoleMemberId(memberId);
+    try {
+      await updateWorkspaceMemberRole(memberId, nextRole);
+      await onMembersChanged?.();
+    } catch (error) {
+      setRemoveError(error.message);
+    } finally {
+      setUpdatingRoleMemberId(null);
     }
   }
 
@@ -342,6 +409,14 @@ function WorkspaceMembers({ currentUserId, onMembersChanged, workspace }) {
                   value={inviteEmail}
                   onChange={(event) => setInviteEmail(event.target.value)}
                 />
+                <select
+                  aria-label="Workspace role"
+                  value={inviteRole}
+                  onChange={(event) => setInviteRole(event.target.value)}
+                >
+                  <option value="member">Member</option>
+                  <option value="admin">Admin</option>
+                </select>
                 <button className="invite-members-button" type="submit" disabled={isSendingInvite || !inviteEmail.trim()}>
                   Invite workspace members
                 </button>
@@ -356,9 +431,12 @@ function WorkspaceMembers({ currentUserId, onMembersChanged, workspace }) {
               <WorkspaceMemberRow
                 actionLabel={getMemberActionLabel(member)}
                 isRemoving={removingMemberId === (member.workspaceMemberId ?? member.id)}
+                isUpdatingRole={updatingRoleMemberId === (member.workspaceMemberId ?? member.id)}
                 member={member}
                 key={member.workspaceMemberId ?? member.id}
                 onRemove={removeWorkspaceMember}
+                onUpdateRole={updateMemberRole}
+                roleActionLabel={getRoleActionLabel(member)}
               />
             ))}
           </div>
