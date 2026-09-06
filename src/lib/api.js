@@ -83,6 +83,42 @@ export async function downloadCardAttachment(attachmentId) {
   return response.blob();
 }
 
+export async function askCardRag(cardId, { query, topK = 5 }) {
+  const payload = await apiFetch("/rag/ask", {
+    method: "POST",
+    body: JSON.stringify({
+      card_id: cardId,
+      query,
+      top_k: topK,
+    }),
+  });
+  return payload.data;
+}
+
+export async function askWorkspaceRag(workspaceId, { query, topK = 5 }) {
+  const payload = await apiFetch("/rag/ask", {
+    method: "POST",
+    body: JSON.stringify({
+      workspace_id: workspaceId,
+      query,
+      top_k: topK,
+    }),
+  });
+  return payload.data;
+}
+
+export async function askProjectRag(projectId, { query, topK = 5 }) {
+  const payload = await apiFetch("/rag/ask", {
+    method: "POST",
+    body: JSON.stringify({
+      project_id: projectId,
+      query,
+      top_k: topK,
+    }),
+  });
+  return payload.data;
+}
+
 export async function loginUser({ email, password }) {
   const payload = await apiFetch("/auth/login", {
     method: "POST",

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
+  askCardRag,
   buildApiUrl,
   createCardComment,
   createCardLabel,
@@ -163,6 +164,26 @@ function mapDetailAttachment(attachment) {
   };
 }
 
+function formatRagScore(value) {
+  return typeof value === "number" ? value.toFixed(2) : null;
+}
+
+function formatCardRagSource(source) {
+  const details = [`Attachment #${source.attachment_id}`, `chunk #${source.chunk_index}`];
+  const rerankScore = formatRagScore(source.rerank_score);
+  const bm25Score = formatRagScore(source.bm25_score);
+
+  if (rerankScore) {
+    details.push(`rerank ${rerankScore}`);
+  }
+
+  if (bm25Score) {
+    details.push(`BM25 ${bm25Score}`);
+  }
+
+  return details.join(", ");
+}
+
 function mapDetailComment(comment, projectMembers) {
   const author = projectMembers.find((member) => String(member.id) === String(comment.author_id)) ?? {
     id: comment.author_id,
@@ -208,6 +229,10 @@ function CardDetailModal({
 }) {
   const [activeTab, setActiveTab] = useState("Members");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isRagMenuOpen, setIsRagMenuOpen] = useState(false);
+  const [ragQuestion, setRagQuestion] = useState("");
+  const [ragMessages, setRagMessages] = useState([]);
+  const [isAskingRag, setIsAskingRag] = useState(false);
   const [detailCard, setDetailCard] = useState(card);
   const [detailError, setDetailError] = useState("");
   const [isLoadingDetail, setIsLoadingDetail] = useState(true);
@@ -246,6 +271,7 @@ function CardDetailModal({
   const [editingCommentText, setEditingCommentText] = useState("");
   const [isMentionMenuOpen, setIsMentionMenuOpen] = useState(false);
   const [mentionUsers, setMentionUsers] = useState([]);
+  const ragMenuRef = useRef(null);
   const cardMenuRef = useRef(null);
   const statusMenuRef = useRef(null);
   const memberPickerRef = useRef(null);
@@ -517,6 +543,52 @@ function CardDetailModal({
       window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
     } catch (error) {
       setDetailError(error.message);
+    }
+  }
+
+  async function askRagQuestion(event) {
+    event.preventDefault();
+
+    const normalizedQuestion = ragQuestion.trim();
+    if (!normalizedQuestion) {
+      return;
+    }
+
+    const questionMessage = {
+      id: `user-${Date.now()}`,
+      role: "user",
+      content: normalizedQuestion,
+    };
+
+    setRagMessages((messages) => [...messages, questionMessage]);
+    setRagQuestion("");
+    setIsAskingRag(true);
+    try {
+      const result = await askCardRag(card.id, {
+        query: normalizedQuestion,
+        topK: 5,
+      });
+      setRagMessages((messages) => [
+        ...messages,
+        {
+          id: `assistant-${Date.now()}`,
+          role: "assistant",
+          content: result.answer,
+          sources: result.sources ?? [],
+        },
+      ]);
+    } catch (error) {
+      setRagMessages((messages) => [
+        ...messages,
+        {
+          id: `assistant-error-${Date.now()}`,
+          role: "assistant",
+          content: error.message,
+          isError: true,
+        },
+      ]);
+    } finally {
+      setIsAskingRag(false);
     }
   }
 
@@ -821,6 +893,10 @@ function CardDetailModal({
         setIsMenuOpen(false);
       }
 
+      if (ragMenuRef.current && !ragMenuRef.current.contains(event.target)) {
+        setIsRagMenuOpen(false);
+      }
+
       if (statusMenuRef.current && !statusMenuRef.current.contains(event.target)) {
         setIsStatusMenuOpen(false);
       }
@@ -952,6 +1028,66 @@ function CardDetailModal({
           </div>
 
           <div className="card-detail-actions">
+            <div className="card-rag-wrapper" ref={ragMenuRef}>
+              <button
+                className={`icon-button ${isRagMenuOpen ? "is-active" : ""}`}
+                type="button"
+                aria-label="Ask anything about this card"
+                aria-expanded={isRagMenuOpen}
+                onClick={() => setIsRagMenuOpen((isOpen) => !isOpen)}
+              >
+                <svg aria-hidden="true" className="icon-svg" fill="none" height="18" viewBox="0 0 24 24" width="18">
+                  <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                  <path d="M8 9h8M8 13h5" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+                </svg>
+              </button>
+              {isRagMenuOpen && (
+                <div className="card-rag-menu" role="dialog" aria-label="Ask anything about this card">
+                  <div className="card-rag-messages" aria-live="polite">
+                    {ragMessages.length === 0 ? (
+                      <p className="card-rag-empty">Ask anything about this card.</p>
+                    ) : (
+                      ragMessages.map((message) => (
+                        <div
+                          className={`card-rag-message card-rag-message-${message.role} ${message.isError ? "is-error" : ""}`}
+                          key={message.id}
+                        >
+                          <p>{message.content}</p>
+                          {message.sources?.length > 0 && (
+                            <div className="card-rag-sources">
+                              <span>Sources</span>
+                              {message.sources.map((source) => (
+                                <small key={`${source.chunk_id}-${source.chunk_index}`}>
+                                  {formatCardRagSource(source)}
+                                </small>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                    {isAskingRag && (
+                      <div className="card-rag-message card-rag-message-assistant">
+                        <p>Thinking...</p>
+                      </div>
+                    )}
+                  </div>
+                  <form className="card-rag-form" onSubmit={askRagQuestion}>
+                    <label>
+                      <textarea
+                        value={ragQuestion}
+                        onChange={(event) => setRagQuestion(event.target.value)}
+                        placeholder="Ask anything about this card"
+                        rows={3}
+                      />
+                    </label>
+                    <button type="submit" disabled={isAskingRag || !ragQuestion.trim()}>
+                      {isAskingRag ? "Asking..." : "Ask"}
+                    </button>
+                  </form>
+                </div>
+              )}
+            </div>
             <div className="card-menu-wrapper" ref={cardMenuRef}>
               <button
                 className="icon-button"
