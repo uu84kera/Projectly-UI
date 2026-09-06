@@ -663,6 +663,18 @@ body.is-resizing-sidebar {
   gap: 10px;
 }
 
+.workspace-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.project-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .workspace-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -2652,6 +2664,148 @@ select.card-status-select {
   position: relative;
 }
 
+.card-rag-wrapper {
+  position: relative;
+}
+
+.card-rag-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 40;
+  display: grid;
+  gap: 10px;
+  width: min(380px, calc(100vw - 40px));
+  padding: 14px;
+  border: 1px solid #dfe1e6;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 18px 42px rgba(9, 30, 66, 0.18);
+}
+
+.card-rag-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 270px;
+  min-height: 120px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.card-rag-empty {
+  align-self: center;
+  margin: auto 0;
+  color: #626f86;
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.card-rag-message {
+  display: grid;
+  gap: 7px;
+  max-width: 82%;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.card-rag-message p {
+  margin: 0;
+}
+
+.card-rag-message-user {
+  align-self: flex-end;
+  color: #ffffff;
+  background: #7c3aed;
+}
+
+.card-rag-message-assistant {
+  align-self: flex-start;
+  color: #172b4d;
+  background: #f4f5f7;
+  font-weight: 700;
+}
+
+.card-rag-message-assistant.is-error {
+  color: #991b1b;
+  background: #fef2f2;
+}
+
+.card-rag-form {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid #dfe1e6;
+  padding-top: 10px;
+}
+
+.card-rag-form label {
+  display: grid;
+  gap: 7px;
+  color: #172b4d;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.card-rag-form textarea {
+  width: 100%;
+  min-height: 44px;
+  resize: vertical;
+  border: 1px solid #dfe1e6;
+  border-radius: 7px;
+  padding: 6px 8px;
+  color: #172b4d;
+  background: #ffffff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.card-rag-form textarea:focus {
+  border-color: #7c3aed;
+  outline: 2px solid rgba(124, 58, 237, 0.18);
+}
+
+.card-rag-form button {
+  justify-self: end;
+  min-width: 54px;
+  border: 0;
+  border-radius: 7px;
+  padding: 6px 10px;
+  color: #ffffff;
+  background: #7c3aed;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.card-rag-form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.card-rag-sources {
+  display: grid;
+  gap: 4px;
+}
+
+.card-rag-sources span {
+  color: inherit;
+  opacity: 0.72;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.card-rag-sources small {
+  color: inherit;
+  opacity: 0.82;
+  font-size: 12px;
+}
+
 .card-actions-menu {
   right: 0;
   left: auto;
@@ -2792,8 +2946,12 @@ select.card-status-select {
 .member-search-results,
 .label-create-row {
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
+}
+
+.selected-member-list,
+.member-search-results {
+  flex-wrap: wrap;
 }
 
 .selected-member-list {
@@ -2906,14 +3064,22 @@ select.card-status-select {
 
 .label-create-row {
   align-items: center;
+  flex-wrap: nowrap;
 }
 
 .label-create-row input {
-  min-width: 180px;
+  flex: 0 1 170px;
+  min-width: 130px;
 }
 
 .label-create-row select {
-  min-width: 120px;
+  flex: 0 0 112px;
+  min-width: 104px;
+}
+
+.label-create-row .small-action-button {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .card-label-options {
