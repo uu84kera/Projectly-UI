@@ -29,8 +29,8 @@ import InboxPage from "../../pages/app/InboxPage.jsx";
 import ProjectBacklogPage from "../../pages/app/ProjectBacklogPage.jsx";
 import UserSettingsPage from "../../pages/app/UserSettingsPage.jsx";
 import WorkspaceProjectsPage from "../../pages/app/WorkspaceProjectsPage.jsx";
-
 import ArchivedProjects from "../workspace/ArchivedProjects.jsx";
+import GeneralRagChat from "./GeneralRagChat.jsx";
 import Sidebar from "./Sidebar.jsx";
 
 function getInitials(name) {
@@ -1051,6 +1051,7 @@ function AppShell({ currentUser, onLogout, onUserUpdated }) {
           )}
         </>
       )}
+      <GeneralRagChat />
     </main>
   );
 }
