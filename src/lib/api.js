@@ -68,16 +68,21 @@ export async function downloadCardAttachment(attachmentId) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}/attachments/${attachmentId}/download`, {
-    headers,
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/attachments/${attachmentId}/download`,
+    {
+      headers,
+    },
+  );
 
   if (!response.ok) {
     const contentType = response.headers.get("content-type") ?? "";
     const payload = contentType.includes("application/json")
       ? await response.json()
       : null;
-    throw new Error(payload?.detail ?? payload?.message ?? "Attachment download failed");
+    throw new Error(
+      payload?.detail ?? payload?.message ?? "Attachment download failed",
+    );
   }
 
   return response.blob();
@@ -701,5 +706,17 @@ export async function createProjectInvitation(projectId, { email }) {
     method: "POST",
     body: JSON.stringify({ email, role: "guest" }),
   });
+  return payload.data;
+}
+
+export async function askGeneralRag({ query, topK = 5 }) {
+  const payload = await apiFetch("/rag/ask", {
+    method: "POST",
+    body: JSON.stringify({
+      query,
+      top_k: topK,
+    }),
+  });
+
   return payload.data;
 }
